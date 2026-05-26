@@ -23,75 +23,125 @@
   };
 
   const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-
-  const DEFAULT = {
-    profile: { name:"XREZZKY", tagline:"Digital Creator & Developer", bio:"Halo! Gw XREZZKY — builder, developer, dan digital entrepreneur. Gw bikin tools, marketplace, dan solusi digital yang berguna buat komunitas.", avatarUrl:"", bannerUrl:"", badge:"✦ Verified Creator", location:"Indonesia 🇮🇩", joinYear:"2021" },
-    stats: [{ label:"Pengguna", value:"10.2K+", icon:"👥" },{ label:"Transaksi", value:"2.5K+", icon:"🛡️" },{ label:"Rating", value:"4.9/5", icon:"⭐" },{ label:"Proyek", value:"30+", icon:"🚀" }],
-    links: [{ label:"WhatsApp CS", url:"#", icon:"💬", color:"#25D366" },{ label:"Telegram", url:"#", icon:"✈️", color:"#229ED9" },{ label:"Instagram", url:"#", icon:"📸", color:"#E1306C" },{ label:"Discord", url:"#", icon:"🎮", color:"#5865F2" },{ label:"YouTube", url:"#", icon:"▶️", color:"#FF0000" },{ label:"TikTok", url:"#", icon:"🎵", color:"#ffffff" }],
-    services: [{ title:"Marketplace", desc:"Beli & jual produk digital dengan aman", icon:"🏪" },{ title:"Middleman (MC)", desc:"Escrow aman, dana ditahan sampai selesai", icon:"🛡️" },{ title:"Deposit Balance", desc:"Isi saldo untuk kemudahan transaksi", icon:"💳" },{ title:"CS 24/7", desc:"Support aktif siap membantu kapan saja", icon:"🎧" }],
-    announcements: [{ tag:"Promo", text:"Cashback MC 10% untuk semua transaksi — berlaku s/d 30 Nov!", time:"2 jam lalu", color:"#a855f7" },{ tag:"Update", text:"Sistem Deposit berhasil menambahkan metode pembayaran baru.", time:"5 jam lalu", color:"#3b82f6" },{ tag:"Info", text:"Jasa delay garansi 24 jam untuk pengguna yang menggunakan MC.", time:"1 hari lalu", color:"#f59e0b" }],
-    theme: { accentColor:"#7c3aed", accentSecondary:"#3b82f6", bgPrimary:"#0a0a0f", bgCard:"#111118" },
-    footer: { copy:"© 2025 XREZZKY OFFICIAL STORE — All Rights Reserved.", tagline:"Trusted · Aman · Cepat · Profesional" }
-  };
+  const db  = getDatabase(app);
 
   function el(id){ return document.getElementById(id); }
+  function show(id){ el(id).style.display=''; }
+  function hide(id){ el(id).style.display='none'; }
 
   function applyData(data) {
-    const d = {...DEFAULT,...data};
-    const p = {...DEFAULT.profile,...(d.profile||{})};
-    el('profile-name').textContent = p.name;
-    el('profile-tagline').textContent = p.tagline;
-    el('profile-bio').textContent = p.bio;
-    el('profile-badge').textContent = p.badge;
-    el('profile-location').textContent = p.location;
-    el('profile-join').textContent = `Bergabung ${p.joinYear}`;
-    if(p.avatarUrl) el('profile-avatar').src = p.avatarUrl;
-    if(p.bannerUrl){ el('banner-bg').style.backgroundImage=`url(${p.bannerUrl})`; el('banner-bg').style.backgroundSize='cover'; el('banner-bg').style.backgroundPosition='center'; }
+    if(!data) return;
 
-    const stats = d.stats||DEFAULT.stats;
-    el('stats-grid').innerHTML = stats.map(s=>`
-      <div class="stat-card">
-        <span class="stat-icon">${s.icon}</span>
-        <span class="stat-value">${s.value}</span>
-        <span class="stat-label">${s.label}</span>
-      </div>`).join('');
+    // ── THEME (apply first so colors are ready) ──
+    const t = data.theme || {};
+    if(t.accentColor)     document.documentElement.style.setProperty('--accent',    t.accentColor);
+    if(t.accentSecondary) document.documentElement.style.setProperty('--accent2',   t.accentSecondary);
+    if(t.bgPrimary)       document.documentElement.style.setProperty('--bg',        t.bgPrimary);
+    if(t.bgCard)          document.documentElement.style.setProperty('--card',      t.bgCard);
 
-    const links = d.links||DEFAULT.links;
-    el('links-grid').innerHTML = links.map(l=>`
-      <a href="${l.url}" class="link-btn" target="_blank" style="--lc:${l.color}">
-        <span class="link-icon">${l.icon}</span><span>${l.label}</span>
-        <svg class="link-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
-      </a>`).join('');
+    // ── PROFILE ──
+    const p = data.profile || {};
+    if(p.name)     { el('profile-name').textContent    = p.name;    show('profile-name'); }    else hide('profile-name');
+    if(p.tagline)  { el('profile-tagline').textContent = p.tagline; show('profile-tagline'); } else hide('profile-tagline');
+    if(p.bio)      { el('profile-bio').textContent     = p.bio;     show('profile-bio'); }     else hide('profile-bio');
+    if(p.badge)    { el('profile-badge').textContent   = p.badge;   show('profile-badge'); }   else hide('profile-badge');
 
-    const services = d.services||DEFAULT.services;
-    el('services-grid').innerHTML = services.map(s=>`
-      <div class="service-card">
-        <div class="service-icon">${s.icon}</div>
-        <div><div class="service-title">${s.title}</div><div class="service-desc">${s.desc}</div></div>
-      </div>`).join('');
+    // location + join chips — only show if data exists
+    if(p.location) { el('chip-location').textContent = p.location; show('chip-location-wrap'); } else hide('chip-location-wrap');
+    if(p.joinYear) { el('chip-join').textContent = `Bergabung ${p.joinYear}`; show('chip-join-wrap'); } else hide('chip-join-wrap');
 
-    const anns = d.announcements||DEFAULT.announcements;
-    el('ann-list').innerHTML = anns.map(a=>`
-      <div class="ann-item">
-        <span class="ann-tag" style="background:${a.color}22;color:${a.color};border-color:${a.color}44">${a.tag}</span>
-        <span class="ann-text">${a.text}</span>
-        <span class="ann-time">${a.time}</span>
-      </div>`).join('');
+    // avatar
+    if(p.avatarUrl) {
+      el('profile-avatar').src = p.avatarUrl;
+      el('profile-avatar').style.background = 'none';
+    } else {
+      el('profile-avatar').removeAttribute('src');
+      el('profile-avatar').style.background = 'linear-gradient(135deg,var(--accent),var(--accent2))';
+    }
 
-    const f = {...DEFAULT.footer,...(d.footer||{})};
-    el('footer-copy').textContent = f.copy;
-    el('footer-tagline').textContent = f.tagline;
+    // banner
+    if(p.bannerUrl) {
+      el('banner-bg').style.backgroundImage    = `url(${p.bannerUrl})`;
+      el('banner-bg').style.backgroundSize     = 'cover';
+      el('banner-bg').style.backgroundPosition = 'center';
+    }
 
-    const t = {...DEFAULT.theme,...(d.theme||{})};
-    document.documentElement.style.setProperty('--accent', t.accentColor);
-    document.documentElement.style.setProperty('--accent2', t.accentSecondary);
-    document.documentElement.style.setProperty('--bg', t.bgPrimary);
-    document.documentElement.style.setProperty('--card', t.bgCard);
+    // nav logo
+    if(p.name) el('nav-logo').textContent = p.name;
+
+    // ── STATS ──
+    const stats = Array.isArray(data.stats) ? data.stats.filter(s=>s.value||s.label) : [];
+    if(stats.length > 0) {
+      el('stats-grid').innerHTML = stats.map(s=>`
+        <div class="stat-card">
+          ${s.icon?`<span class="stat-icon">${s.icon}</span>`:''}
+          <span class="stat-value">${s.value||''}</span>
+          <span class="stat-label">${s.label||''}</span>
+        </div>`).join('');
+      show('stats-section');
+    } else {
+      hide('stats-section');
+    }
+
+    // ── LINKS ──
+    const links = Array.isArray(data.links) ? data.links.filter(l=>l.label) : [];
+    if(links.length > 0) {
+      el('links-grid').innerHTML = links.map(l=>`
+        <a href="${l.url||'#'}" class="link-btn" target="_blank" style="--lc:${l.color||'var(--accent)'}">
+          ${l.icon?`<span class="link-icon">${l.icon}</span>`:''}
+          <span>${l.label}</span>
+          <svg class="link-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+        </a>`).join('');
+      show('links-card');
+    } else {
+      hide('links-card');
+    }
+
+    // ── SERVICES ──
+    const services = Array.isArray(data.services) ? data.services.filter(s=>s.title) : [];
+    if(services.length > 0) {
+      el('services-grid').innerHTML = services.map(s=>`
+        <div class="service-card">
+          ${s.icon?`<div class="service-icon">${s.icon}</div>`:''}
+          <div>
+            <div class="service-title">${s.title}</div>
+            ${s.desc?`<div class="service-desc">${s.desc}</div>`:''}
+          </div>
+        </div>`).join('');
+      show('services-card');
+    } else {
+      hide('services-card');
+    }
+
+    // hide two-col wrapper if both cards hidden
+    const linksHidden   = el('links-card').style.display   === 'none';
+    const servicesHidden= el('services-card').style.display === 'none';
+    el('two-col').style.display = (linksHidden && servicesHidden) ? 'none' : '';
+
+    // ── ANNOUNCEMENTS ──
+    const anns = Array.isArray(data.announcements) ? data.announcements.filter(a=>a.text) : [];
+    if(anns.length > 0) {
+      el('ann-list').innerHTML = anns.map(a=>`
+        <div class="ann-item">
+          ${a.tag?`<span class="ann-tag" style="background:${a.color||'#7c3aed'}22;color:${a.color||'#7c3aed'};border-color:${a.color||'#7c3aed'}44">${a.tag}</span>`:''}
+          <span class="ann-text">${a.text}</span>
+          ${a.time?`<span class="ann-time">${a.time}</span>`:''}
+        </div>`).join('');
+      show('ann-card');
+    } else {
+      hide('ann-card');
+    }
+
+    // ── FOOTER ──
+    const f = data.footer || {};
+    if(f.copy)    { el('footer-copy').textContent    = f.copy;    show('footer-copy'); }    else hide('footer-copy');
+    if(f.tagline) { el('footer-tagline').textContent = f.tagline; show('footer-tagline'); } else hide('footer-tagline');
   }
 
-  applyData(DEFAULT);
-  onValue(ref(db,'siteData'), snap => { if(snap.exists()) applyData(snap.val()); });
+  // Realtime listener — no default fallback, only render from DB
+  onValue(ref(db,'siteData'), snap => {
+    if(snap.exists()) applyData(snap.val());
+  });
 </script>
 
 <style>
@@ -101,7 +151,7 @@ html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;overflow-x:hidden}
 body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
 .nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:60px;background:rgba(10,10,15,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
-.nav-logo{font-family:var(--font-display);font-weight:800;font-size:18px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav-logo{font-family:var(--font-display);font-weight:800;font-size:18px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;min-width:20px}
 main{padding-top:60px;max-width:900px;margin:0 auto;padding-left:20px;padding-right:20px}
 .hero{position:relative;margin-top:24px;border-radius:24px;overflow:hidden;border:1px solid var(--border)}
 #banner-bg{height:180px;background:linear-gradient(135deg,#1a0a2e 0%,#0f1629 50%,#0a1520 100%);position:relative}
@@ -162,54 +212,67 @@ footer{margin-top:32px;margin-bottom:20px;border-top:1px solid var(--border);pad
 </head>
 <body>
 <div class="accent-glow"></div>
+
 <nav class="nav">
-  <div class="nav-logo">XREZZKY</div>
+  <div class="nav-logo" id="nav-logo"></div>
 </nav>
+
 <main>
+
+  <!-- HERO / PROFILE -->
   <div class="hero">
     <div id="banner-bg"></div>
     <div class="hero-body">
       <div class="profile-row">
         <div class="avatar-wrap">
           <div class="avatar-ring"></div>
-          <img id="profile-avatar" src="https://ui-avatars.com/api/?name=XREZZKY&background=7c3aed&color=fff&size=200&bold=true" alt="Avatar">
+          <img id="profile-avatar" alt="Avatar" style="background:linear-gradient(135deg,var(--accent),var(--accent2))">
         </div>
         <div class="profile-meta">
-          <div class="profile-badge" id="profile-badge">✦ Verified Creator</div>
-          <h1 id="profile-name">XREZZKY</h1>
-          <div id="profile-tagline">Digital Creator & Developer</div>
+          <div class="profile-badge" id="profile-badge" style="display:none"></div>
+          <h1 id="profile-name" style="display:none"></h1>
+          <div id="profile-tagline" style="display:none"></div>
         </div>
       </div>
       <div class="profile-info-row">
-        <div class="profile-chip">📍 <span id="profile-location">Indonesia 🇮🇩</span></div>
-        <div class="profile-chip">📅 <span id="profile-join">Bergabung 2021</span></div>
+        <div class="profile-chip" id="chip-location-wrap" style="display:none">📍 <span id="chip-location"></span></div>
+        <div class="profile-chip" id="chip-join-wrap" style="display:none">📅 <span id="chip-join"></span></div>
       </div>
-      <p id="profile-bio">Halo! Gw XREZZKY — builder, developer, dan digital entrepreneur.</p>
+      <p id="profile-bio" style="display:none"></p>
     </div>
   </div>
-  <div class="section">
+
+  <!-- STATS -->
+  <div class="section" id="stats-section" style="display:none">
     <div class="section-label">Overview</div>
     <div id="stats-grid"></div>
   </div>
-  <div class="two-col">
-    <div class="card">
+
+  <!-- LINKS + SERVICES -->
+  <div class="two-col" id="two-col" style="display:none">
+    <div class="card" id="links-card" style="display:none">
       <div class="card-title"><div class="card-title-dot"></div> Social & Links</div>
       <div id="links-grid"></div>
     </div>
-    <div class="card">
+    <div class="card" id="services-card" style="display:none">
       <div class="card-title"><div class="card-title-dot"></div> Layanan</div>
       <div id="services-grid"></div>
     </div>
   </div>
-  <div class="card" style="margin-top:20px">
+
+  <!-- ANNOUNCEMENTS -->
+  <div class="card" id="ann-card" style="margin-top:20px;display:none">
     <div class="card-title"><div class="card-title-dot"></div> Pengumuman Terbaru</div>
     <div id="ann-list"></div>
   </div>
+
+  <!-- FOOTER -->
   <footer>
-    <div id="footer-copy"></div>
-    <div id="footer-tagline"></div>
-    <div class="footer-brand">Made with ❤ by <span>XREZZKY</span></div>
+    <div id="footer-copy" style="display:none"></div>
+    <div id="footer-tagline" style="display:none"></div>
+    <div class="footer-brand">Made with ❤ by <span id="footer-brand-name">XREZZKY</span></div>
   </footer>
+
 </main>
 </body>
 </html>
