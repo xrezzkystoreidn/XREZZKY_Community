@@ -134,7 +134,7 @@ function applyData(d){
   // ── ANNOUNCEMENTS ──
   const anns=(d.announcements||[]).filter(a=>a.text);
   if(anns.length){
-    el('ann-list').innerHTML=anns.map(a=>`
+    el('ann-list').innerHTML=anns.map((a,i)=>`
       <div class="ann-item">
         <div class="ann-main">
           <div class="ann-header">
@@ -143,11 +143,14 @@ function applyData(d){
           </div>
           <span class="ann-text">${waFormat(a.text)}</span>
           ${a.mediaUrl?`
-          <div class="ann-media-wrap">
-            ${a.mediaType==='video'
-              ?`<video src="${a.mediaUrl}" controls class="ann-media" playsinline></video>`
-              :`<img src="${a.mediaUrl}" class="ann-media" alt="media" loading="lazy" onclick="this.requestFullscreen&&this.requestFullscreen()">`
-            }
+          <div class="ann-media-wrap" onclick="openMediaModal('${a.mediaUrl}','${a.mediaType||'image'}')">
+            <div class="ann-media-protect">
+              ${a.mediaType==='video'
+                ?`<video src="${a.mediaUrl}" class="ann-media" playsinline preload="metadata"></video>`
+                :`<img src="${a.mediaUrl}" class="ann-media" alt="media" draggable="false">`
+              }
+              <div class="ann-media-overlay"><span>Ketuk untuk perbesar</span></div>
+            </div>
           </div>`:''}
         </div>
       </div>`).join('');
@@ -340,9 +343,6 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .ann-tag{flex-shrink:0;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:700;letter-spacing:0.4px;border:1px solid}
 .ann-text{display:block;font-size:13px;color:rgba(226,230,240,0.82);line-height:1.6}
 .ann-time{font-size:10px;color:var(--muted);margin-left:auto}
-.ann-media-wrap{margin-top:10px;border-radius:8px;overflow:hidden;background:rgba(0,0,0,0.2)}
-.ann-media{width:100%;max-height:320px;object-fit:cover;display:block;cursor:pointer;border-radius:8px}
-video.ann-media{max-height:280px;background:#000}
 
 /* ── TENTANG & KEBIJAKAN ── */
 .page-section{margin-bottom:20px}
@@ -376,6 +376,24 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
 .wa-item-name{display:block;font-size:13px;font-weight:600;line-height:1.2}
 .wa-item-desc{display:block;font-size:11px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wa-item-badge{flex-shrink:0;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:700;border:1px solid;letter-spacing:0.3px}
+
+/* ── ANNOUNCEMENTS MEDIA ── */
+.ann-media-wrap{margin-top:10px;border-radius:10px;overflow:hidden;cursor:pointer;position:relative}
+.ann-media-protect{position:relative;user-select:none;-webkit-user-select:none}
+.ann-media-protect img,.ann-media-protect video{width:100%;max-height:280px;object-fit:cover;display:block;border-radius:10px;pointer-events:none}
+.ann-media-overlay{position:absolute;inset:0;background:rgba(0,0,0,0);transition:background 0.2s;display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px;border-radius:10px}
+.ann-media-overlay span{font-size:11px;color:rgba(255,255,255,0);background:rgba(0,0,0,0);padding:4px 10px;border-radius:20px;transition:all 0.2s}
+.ann-media-wrap:hover .ann-media-overlay{background:rgba(0,0,0,0.25)}
+.ann-media-wrap:hover .ann-media-overlay span{color:#fff;background:rgba(0,0,0,0.5)}
+
+/* ── MEDIA MODAL ── */
+#media-modal{display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.92);align-items:center;justify-content:center;padding:16px}
+#media-modal.open{display:flex}
+#media-modal-inner{position:relative;max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center}
+#media-modal img,#media-modal video{max-width:min(860px,100vw - 32px);max-height:90vh;border-radius:12px;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-select:none;draggable:false}
+#media-modal video{pointer-events:auto}
+#modal-close{position:fixed;top:16px;right:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);transition:background 0.15s;z-index:9001}
+#modal-close:hover{background:rgba(255,255,255,0.28)}
 
 /* ── PROSE ── */
 .prose{font-size:13px;line-height:1.85;color:rgba(226,230,240,0.78)}
@@ -635,6 +653,16 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
 </footer>
 </footer>
 
+<!-- ── MEDIA MODAL ── -->
+<div id="media-modal" onclick="closeMediaModal()">
+  <div id="media-modal-inner" onclick="event.stopPropagation()">
+    <img id="modal-img" src="" alt="" draggable="false" style="display:none"
+      oncontextmenu="return false">
+    <video id="modal-vid" controls playsinline style="display:none"></video>
+  </div>
+  <button id="modal-close" onclick="closeMediaModal()">✕</button>
+</div>
+
 <script>
 // ── PAGE NAVIGATION ──
 function goPage(name, btn){
@@ -644,6 +672,55 @@ function goPage(name, btn){
   btn.classList.add('active');
   window.scrollTo({top:0,behavior:'smooth'});
 }
+
+// ── MEDIA MODAL ──
+function openMediaModal(url, type) {
+  const modal = document.getElementById('media-modal');
+  const img   = document.getElementById('modal-img');
+  const vid   = document.getElementById('modal-vid');
+  if(type === 'video') {
+    img.style.display = 'none';
+    vid.style.display = 'block';
+    vid.src = url;
+    vid.play().catch(()=>{});
+  } else {
+    vid.style.display = 'none';
+    img.style.display = 'block';
+    img.src = url;
+  }
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeMediaModal() {
+  const modal = document.getElementById('media-modal');
+  const vid   = document.getElementById('modal-vid');
+  modal.classList.remove('open');
+  vid.pause();
+  vid.src = '';
+  document.body.style.overflow = '';
+}
+
+// Tutup modal dengan tombol back/escape
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape') closeMediaModal();
+});
+
+// ── PROTEKSI GAMBAR ── cegah klik kanan & long press save
+document.addEventListener('contextmenu', e => {
+  if(e.target.tagName === 'IMG') e.preventDefault();
+});
+document.addEventListener('dragstart', e => {
+  if(e.target.tagName === 'IMG') e.preventDefault();
+});
+// Long press protection (mobile)
+let pressTimer;
+document.addEventListener('touchstart', e => {
+  if(e.target.tagName === 'IMG') {
+    pressTimer = setTimeout(() => { /* block */ }, 500);
+  }
+}, { passive: true });
+document.addEventListener('touchend', () => clearTimeout(pressTimer));
 </script>
 </body>
 </html>
