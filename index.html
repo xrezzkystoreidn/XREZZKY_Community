@@ -406,6 +406,15 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
 /* ── SECTIONS SPACING ── */
 .section-block{margin-bottom:18px}
 
+/* ── PROTEKSI FOTO GLOBAL ── */
+img{
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none; /* iOS: block "Save Image" popup */
+  pointer-events:none;        /* Block semua klik langsung ke gambar */
+}
+.img-protected-wrap{position:relative;display:inline-block;width:100%}
+
 /* ── RESPONSIVE ── */
 
 /* Desktop */
@@ -706,21 +715,69 @@ document.addEventListener('keydown', e => {
   if(e.key === 'Escape') closeMediaModal();
 });
 
-// ── PROTEKSI GAMBAR ── cegah klik kanan & long press save
-document.addEventListener('contextmenu', e => {
-  if(e.target.tagName === 'IMG') e.preventDefault();
-});
+// ── PROTEKSI FOTO TOTAL ──────────────────────────
+// 1. Block semua klik kanan di seluruh halaman
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+// 2. Block drag semua gambar
 document.addEventListener('dragstart', e => {
   if(e.target.tagName === 'IMG') e.preventDefault();
 });
-// Long press protection (mobile)
-let pressTimer;
+
+// 3. Block long press mobile (yang memunculkan "Open image in new tab" / "Save image")
 document.addEventListener('touchstart', e => {
-  if(e.target.tagName === 'IMG') {
-    pressTimer = setTimeout(() => { /* block */ }, 500);
+  if(e.target.tagName === 'IMG' || e.target.closest('.ann-media-protect,.avatar-wrap')) {
+    const t = e.target;
+    t._pressTimer = setTimeout(() => {}, 600);
   }
 }, { passive: true });
-document.addEventListener('touchend', () => clearTimeout(pressTimer));
+
+// 4. Block semua link gambar yang dibuka di tab baru
+// Setiap img tidak punya href, tapi kalau ada wrapper <a> kita block
+document.addEventListener('click', e => {
+  const a = e.target.closest('a');
+  if(a && a.querySelector('img')) {
+    e.preventDefault();
+    return false;
+  }
+});
+
+// 5. Overlay transparan di atas semua gambar via CSS pointer-events
+// (sudah dihandle di CSS dengan pointer-events:none pada img)
+// Tambah overlay div di atas setiap gambar secara dinamis
+function addImgOverlays() {
+  document.querySelectorAll('img:not([data-protected])').forEach(img => {
+    img.setAttribute('data-protected','1');
+    img.setAttribute('draggable','false');
+    img.setAttribute('oncontextmenu','return false');
+    // Wrap dengan div proteksi kalau belum
+    const parent = img.parentElement;
+    if(!parent.classList.contains('img-protected-wrap')) {
+      const wrap = document.createElement('div');
+      wrap.className = 'img-protected-wrap';
+      wrap.style.cssText = 'position:relative;display:inline-block;width:100%';
+      parent.insertBefore(wrap, img);
+      wrap.appendChild(img);
+      // Overlay transparan di atas gambar
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:absolute;inset:0;z-index:2;cursor:pointer;-webkit-user-select:none;user-select:none';
+      // Klik overlay = buka modal kalau ada data url
+      overlay.addEventListener('click', () => {
+        const src = img.src;
+        if(src && !src.startsWith('data:')) openMediaModal(src, 'image');
+      });
+      // Block semua gesture di overlay
+      overlay.addEventListener('contextmenu', e => e.preventDefault());
+      overlay.addEventListener('dragstart', e => e.preventDefault());
+      wrap.appendChild(overlay);
+    }
+  });
+}
+
+// Jalankan saat load dan setiap kali ada perubahan konten (realtime)
+addImgOverlays();
+const _imgObserver = new MutationObserver(addImgOverlays);
+_imgObserver.observe(document.body, { childList: true, subtree: true });
 </script>
 </body>
 </html>
