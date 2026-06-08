@@ -411,9 +411,7 @@ img{
   -webkit-user-select:none;
   user-select:none;
   -webkit-touch-callout:none;
-  pointer-events:none;
 }
-/* Gambar di ann-media-wrap perlu pointer-events untuk modal */
 .ann-media-wrap img,.ann-media-wrap video{pointer-events:none}
 .ann-media-wrap{pointer-events:auto;cursor:pointer}
 
@@ -717,20 +715,38 @@ document.addEventListener('keydown', e => {
   if(e.key === 'Escape') closeMediaModal();
 });
 
-// ── PROTEKSI FOTO TOTAL ──────────────────────────
-document.addEventListener('contextmenu', e => e.preventDefault());
+// ── PROTEKSI FOTO ──────────────────────────────
+// Block klik kanan HANYA pada gambar
+document.addEventListener('contextmenu', e => {
+  if(e.target.tagName === 'IMG') e.preventDefault();
+});
+
+// Block drag gambar
 document.addEventListener('dragstart', e => {
   if(e.target.tagName === 'IMG') e.preventDefault();
 });
 
+// Block long press pada gambar (yang munculin "Open image", "Save image", dll)
+// Cara: kalau long press di img, preventDefault touchend supaya tidak ada aksi
+let _lt = null;
+document.addEventListener('touchstart', e => {
+  if(e.target.tagName === 'IMG') {
+    _lt = setTimeout(() => {
+      // Simulasi "makan" event supaya browser tidak munculin context menu
+      e.target.style.pointerEvents = 'none';
+      setTimeout(() => e.target.style.pointerEvents = '', 300);
+    }, 400);
+  }
+}, { passive: true });
+document.addEventListener('touchend',   () => clearTimeout(_lt));
+document.addEventListener('touchmove',  () => clearTimeout(_lt));
+document.addEventListener('touchcancel',() => clearTimeout(_lt));
+
 // Block link yang buka gambar di tab baru
 document.addEventListener('click', e => {
   const a = e.target.closest('a');
-  if(a && a.querySelector('img')) { e.preventDefault(); return false; }
+  if(a && a.querySelector('img')) { e.preventDefault(); }
 });
-
-// Klik ann-media-wrap sudah handle modal via onclick attribute
-// Avatar dan banner tidak perlu modal - sudah pointer-events:none dari CSS
 </script>
 </body>
 </html>
