@@ -246,30 +246,43 @@ _db.ref('siteData').on('value', snap => { if(snap.exists()) applyData(snap.val()
   if(!sid){
     sid = Date.now().toString(36) + Math.random().toString(36).slice(2,8);
     sessionStorage.setItem('_vsid', sid);
-    // Increment total pakai ServerValue
-    _db.ref('visitorCount').set(firebase.database.ServerValue.increment(1));
+    // Increment total — transaction adalah cara yang benar
+    _db.ref('visitorCount').transaction(function(cur){
+      return (cur || 0) + 1;
+    }, function(err, committed, snap){
+      if(err) console.error('visitorCount error:', err);
+      else console.log('visitorCount updated:', snap.val());
+    });
   }
 
-  // Presence — deteksi koneksi dulu
+  // Presence
   const presRef = _db.ref('onlineNow/' + sid);
-  _db.ref('.info/connected').on('value', snap => {
-    if(!snap.val()) return;
+  _db.ref('.info/connected').on('value', function(snap){
+    if(!snap.val()){
+      console.log('Firebase: disconnected');
+      return;
+    }
+    console.log('Firebase: connected, setting presence');
     presRef.onDisconnect().remove();
-    presRef.set(true);
+    presRef.set(true).then(function(){
+      console.log('Presence set OK');
+    }).catch(function(e){
+      console.error('Presence error:', e.message);
+    });
   });
-  // Hapus saat tab ditutup
-  window.addEventListener('beforeunload', () => presRef.remove());
-  document.addEventListener('visibilitychange', () => {
+
+  window.addEventListener('beforeunload', function(){ presRef.remove(); });
+  document.addEventListener('visibilitychange', function(){
     if(document.hidden) presRef.remove();
     else presRef.set(true);
   });
 
-  // Realtime display
-  _db.ref('visitorCount').on('value', s => {
+  // Display realtime
+  _db.ref('visitorCount').on('value', function(s){
     const el = document.getElementById('visitor-total');
     if(el) el.textContent = (s.val()||0).toLocaleString('id-ID');
   });
-  _db.ref('onlineNow').on('value', s => {
+  _db.ref('onlineNow').on('value', function(s){
     const el = document.getElementById('visitor-online');
     if(el) el.textContent = s.numChildren();
   });
