@@ -245,6 +245,31 @@ _db.ref('siteData').on('value', snap => { if(snap.exists()) applyData(snap.val()
   const myPresenceRef = _db.ref('onlineNow/' + sid);
   let hasCountedView = false;
 
+  // ── QUOTA HARIAN PER-DEVICE (silent, internal saja) ──────────
+  // Maksimal 10 page-view dihitung ke totalVisit per device per hari.
+  // Reset memakai waktu LOKAL device user (bukan waktu server),
+  // jadi tiap device reset di tengah malam menurut jamnya sendiri.
+  // Lewat dari 10x: device tetap bisa buka web & tetap dihitung "online",
+  // hanya saja tidak lagi menambah totalVisit.
+  const QUOTA_KEY = '_vq';
+  const QUOTA_MAX = 10;
+  function todayLocalKey(){
+    const d = new Date();
+    return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+  }
+  function canCountView(){
+    let raw;
+    try { raw = JSON.parse(localStorage.getItem(QUOTA_KEY) || 'null'); } catch(e){ raw = null; }
+    const today = todayLocalKey();
+    if(!raw || raw.d !== today){
+      raw = { d: today, c: 0 };
+    }
+    if(raw.c >= QUOTA_MAX) return false;
+    raw.c += 1;
+    try { localStorage.setItem(QUOTA_KEY, JSON.stringify(raw)); } catch(e){}
+    return true;
+  }
+
   // .info/connected akan fire setiap kali koneksi (ter)sambung,
   // termasuk saat reconnect. Pasang guard biar totalVisit cuma
   // ke-increment SEKALI per page load, tapi presence tetap
@@ -257,8 +282,11 @@ _db.ref('siteData').on('value', snap => { if(snap.exists()) applyData(snap.val()
       if(!hasCountedView){
         hasCountedView = true;
         // Hitung sebagai page view: nambah TIAP KALI web dibuka,
-        // bukan unique visitor.
-        _db.ref('totalVisit').transaction(function(n){ return (n||0)+1; });
+        // tapi dibatasi quota harian per device (silent, tidak
+        // ditampilkan ke user sama sekali).
+        if(canCountView()){
+          _db.ref('totalVisit').transaction(function(n){ return (n||0)+1; });
+        }
       }
     }
   });
