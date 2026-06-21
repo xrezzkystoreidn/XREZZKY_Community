@@ -242,43 +242,35 @@ _db.ref('siteData').on('value', snap => { if(snap.exists()) applyData(snap.val()
 
 // ── VISITOR COUNTER ──────────────────────────────
 (function(){
-  // Device ID permanen di localStorage — 1 device = 1x hitung selamanya
-  let did = localStorage.getItem('_xrzDevId');
-  if(!did){
-    did = Date.now().toString(36) + Math.random().toString(36).slice(2,10);
-    localStorage.setItem('_xrzDevId', did);
-    // Simpan device ke DB dan increment total
-    _db.ref('visitors/' + did).set(true).then(function(){
-      return _db.ref('visitorCount').transaction(function(n){ return (n||0)+1; });
-    });
+  // Buat session ID per tab
+  let sid = sessionStorage.getItem('_sid');
+  if(!sid){
+    sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    sessionStorage.setItem('_sid', sid);
   }
 
-  // Online presence — per tab (pakai sessionStorage)
-  let sid = sessionStorage.getItem('_xrzSid');
-  if(!sid){
-    sid = did + '_' + Math.random().toString(36).slice(2,6);
-    sessionStorage.setItem('_xrzSid', sid);
+  const ref = _db.ref('onlineNow/' + sid);
+
+  // Set saat buka, hapus saat tutup
+  ref.set(true);
+  ref.onDisconnect().remove();
+
+  window.addEventListener('beforeunload', function(){ ref.remove(); });
+
+  // Hitung total unik pakai localStorage
+  if(!localStorage.getItem('_visited')){
+    localStorage.setItem('_visited','1');
+    _db.ref('totalVisit').transaction(function(n){ return (n||0)+1; });
   }
-  const presRef = _db.ref('onlineNow/' + sid);
-  _db.ref('.info/connected').on('value', function(s){
-    if(!s.val()) return;
-    presRef.onDisconnect().remove();
-    presRef.set(true);
-  });
-  window.addEventListener('beforeunload', function(){ presRef.remove(); });
-  document.addEventListener('visibilitychange', function(){
-    if(document.hidden) presRef.remove();
-    else presRef.set(true);
-  });
 
   // Tampilkan
-  _db.ref('visitorCount').on('value', function(s){
-    const el = document.getElementById('visitor-total');
-    if(el) el.textContent = (s.val()||0).toLocaleString('id-ID');
-  });
   _db.ref('onlineNow').on('value', function(s){
     const el = document.getElementById('visitor-online');
     if(el) el.textContent = s.numChildren();
+  });
+  _db.ref('totalVisit').on('value', function(s){
+    const el = document.getElementById('visitor-total');
+    if(el) el.textContent = (s.val()||0).toLocaleString('id-ID');
   });
 })();
 </script>
