@@ -242,42 +242,36 @@ _db.ref('siteData').on('value', snap => { if(snap.exists()) applyData(snap.val()
 
 // ── VISITOR COUNTER ──────────────────────────────
 (function(){
-  let sid = sessionStorage.getItem('_vsid');
-  if(!sid){
-    sid = Date.now().toString(36) + Math.random().toString(36).slice(2,8);
-    sessionStorage.setItem('_vsid', sid);
-    // Increment total — transaction adalah cara yang benar
-    _db.ref('visitorCount').transaction(function(cur){
-      return (cur || 0) + 1;
-    }, function(err, committed, snap){
-      if(err) console.error('visitorCount error:', err);
-      else console.log('visitorCount updated:', snap.val());
+  // Device ID permanen di localStorage — 1 device = 1x hitung selamanya
+  let did = localStorage.getItem('_xrzDevId');
+  if(!did){
+    did = Date.now().toString(36) + Math.random().toString(36).slice(2,10);
+    localStorage.setItem('_xrzDevId', did);
+    // Simpan device ke DB dan increment total
+    _db.ref('visitors/' + did).set(true).then(function(){
+      return _db.ref('visitorCount').transaction(function(n){ return (n||0)+1; });
     });
   }
 
-  // Presence
+  // Online presence — per tab (pakai sessionStorage)
+  let sid = sessionStorage.getItem('_xrzSid');
+  if(!sid){
+    sid = did + '_' + Math.random().toString(36).slice(2,6);
+    sessionStorage.setItem('_xrzSid', sid);
+  }
   const presRef = _db.ref('onlineNow/' + sid);
-  _db.ref('.info/connected').on('value', function(snap){
-    if(!snap.val()){
-      console.log('Firebase: disconnected');
-      return;
-    }
-    console.log('Firebase: connected, setting presence');
+  _db.ref('.info/connected').on('value', function(s){
+    if(!s.val()) return;
     presRef.onDisconnect().remove();
-    presRef.set(true).then(function(){
-      console.log('Presence set OK');
-    }).catch(function(e){
-      console.error('Presence error:', e.message);
-    });
+    presRef.set(true);
   });
-
   window.addEventListener('beforeunload', function(){ presRef.remove(); });
   document.addEventListener('visibilitychange', function(){
     if(document.hidden) presRef.remove();
     else presRef.set(true);
   });
 
-  // Display realtime
+  // Tampilkan
   _db.ref('visitorCount').on('value', function(s){
     const el = document.getElementById('visitor-total');
     if(el) el.textContent = (s.val()||0).toLocaleString('id-ID');
