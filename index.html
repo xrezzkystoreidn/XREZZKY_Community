@@ -240,33 +240,35 @@ _db.ref('siteData').on('value', snap => { if(snap.exists()) applyData(snap.val()
 
 // ── VISITOR COUNTER ──────────────────────────────
 (function(){
-  // Buat session ID per tab agar tidak duplikat saat refresh cepat
-  let sid = sessionStorage.getItem('_sid');
-  if(!sid){
-    sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
-    sessionStorage.setItem('_sid', sid);
-  }
-
+  // sid unik per tab/sesi browser (dibuat ulang tiap kali tab baru dibuka)
+  const sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
   const myPresenceRef = _db.ref('onlineNow/' + sid);
+  let hasCountedView = false;
 
-  // Menggunakan .info/connected milik Firebase agar sinkronisasi onDisconnect akurat
+  // .info/connected akan fire setiap kali koneksi (ter)sambung,
+  // termasuk saat reconnect. Pasang guard biar totalVisit cuma
+  // ke-increment SEKALI per page load, tapi presence tetap
+  // di-resync tiap kali reconnect (biar onDisconnect selalu fresh).
   _db.ref('.info/connected').on('value', function(snapshot) {
     if (snapshot.val() === true) {
       myPresenceRef.set(true);
       myPresenceRef.onDisconnect().remove();
+
+      if(!hasCountedView){
+        hasCountedView = true;
+        // Hitung sebagai page view: nambah TIAP KALI web dibuka,
+        // bukan unique visitor.
+        _db.ref('totalVisit').transaction(function(n){ return (n||0)+1; });
+      }
     }
   });
 
-  // Hapus manual jika user menutup tab / beralih halaman
-  window.addEventListener('beforeunload', function(){ 
-    myPresenceRef.remove(); 
-  });
-
-  // Hitung total unik pakai localStorage
-  if(!localStorage.getItem('_visited')){
-    localStorage.setItem('_visited','1');
-    _db.ref('totalVisit').transaction(function(n){ return (n||0)+1; });
-  }
+  // Hapus presence manual saat tab ditutup / pindah halaman.
+  // pagehide lebih reliable daripada beforeunload, terutama di mobile
+  // (Safari iOS sering nggak fire beforeunload saat swipe-close tab).
+  function cleanup(){ myPresenceRef.remove(); }
+  window.addEventListener('pagehide', cleanup);
+  window.addEventListener('beforeunload', cleanup);
 
   // Tampilkan data secara Real-time ke elemen HTML
   _db.ref('onlineNow').on('value', function(s){
