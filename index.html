@@ -228,13 +228,43 @@ function applyData(d){
   const hasWa = waGrup.length||waKomunitas.length||waSaluran.length;
   if(hasWa) show('wa-section'); else hide('wa-section');
 
-  // ── FOOTER ──
+  // ── FAQ ──
+  window._faqData = d.faq || [];
+  renderFaq(window._faqData, '');
   const f=d.footer||{};
   if(f.copy){    setText('footer-copy',    f.copy);    show('footer-copy'); }    else hide('footer-copy');
   if(f.tagline){ setText('footer-tagline', f.tagline); show('footer-tagline'); } else hide('footer-tagline');
 }
 
 _db.ref('siteData').on('value', snap => { if(snap.exists()) applyData(snap.val()); });
+
+// ── VISITOR COUNTER ──────────────────────────────
+(function(){
+  // Generate session ID unik per tab
+  let sid = sessionStorage.getItem('_vsid');
+  if(!sid){
+    sid = Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+    sessionStorage.setItem('_vsid', sid);
+
+    // Tambah total pengunjung (hanya sekali per session)
+    _db.ref('visitorCount').transaction(cur => (cur||0) + 1);
+  }
+
+  // Online sekarang — tulis presence, hapus saat disconnect
+  const presRef = _db.ref('onlineNow/' + sid);
+  presRef.set(true);
+  presRef.onDisconnect().remove();
+
+  // Tampilkan realtime
+  _db.ref('visitorCount').on('value', s => {
+    const el = document.getElementById('visitor-total');
+    if(el) el.textContent = (s.val()||0).toLocaleString('id-ID');
+  });
+  _db.ref('onlineNow').on('value', s => {
+    const el = document.getElementById('visitor-online');
+    if(el) el.textContent = s.numChildren();
+  });
+})();
 </script>
 
 <style>
@@ -406,6 +436,34 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
 /* ── SECTIONS SPACING ── */
 .section-block{margin-bottom:18px}
 
+/* ── VISITOR COUNTER ── */
+.visitor-bar{display:flex;gap:10px;margin-bottom:18px}
+.visitor-card{flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px}
+.visitor-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.visitor-dot.green{background:#22c55e;box-shadow:0 0 8px #22c55e;animation:vblink 2s infinite}
+.visitor-dot.blue{background:var(--accent);box-shadow:0 0 8px var(--accent)}
+@keyframes vblink{0%,100%{opacity:1}50%{opacity:0.4}}
+.visitor-info{flex:1}
+.visitor-num{font-family:var(--font-d);font-size:18px;font-weight:800;display:block;background:linear-gradient(135deg,#fff,rgba(255,255,255,0.65));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.visitor-label{font-size:10px;color:var(--muted);display:block;margin-top:1px}
+
+/* ── FAQ ── */
+.faq-search{width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:13px;outline:none;margin-bottom:16px;font-family:var(--font-b);transition:border-color 0.18s}
+.faq-search:focus{border-color:rgba(59,141,241,0.4)}
+.faq-search::placeholder{color:var(--muted)}
+.faq-empty{text-align:center;padding:32px;color:var(--muted);font-size:13px}
+.faq-item{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;overflow:hidden;transition:border-color 0.18s}
+.faq-item.open{border-color:rgba(59,141,241,0.3)}
+.faq-q{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;gap:12px;user-select:none;-webkit-user-select:none}
+.faq-q-text{font-size:13px;font-weight:600;line-height:1.4;flex:1}
+.faq-icon{width:22px;height:22px;border-radius:50%;background:rgba(59,141,241,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.25s;font-size:12px;color:var(--accent)}
+.faq-item.open .faq-icon{background:rgba(59,141,241,0.2);transform:rotate(180deg)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height 0.3s ease,padding 0.3s ease}
+.faq-item.open .faq-a{max-height:600px}
+.faq-a-inner{padding:0 16px 16px;font-size:13px;color:rgba(226,230,240,0.78);line-height:1.75;border-top:1px solid var(--border);padding-top:12px;margin-top:0}
+.faq-cat{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;display:flex;align-items:center;gap:7px}
+.faq-cat::after{content:'';flex:1;height:1px;background:var(--border)}
+
 /* ── PROTEKSI AVATAR & BANNER ── */
 #profile-avatar, #banner-bg img {
   -webkit-user-select:none;
@@ -485,6 +543,7 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
   <div class="nav-logo" id="nav-logo"></div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="goPage('home',this)">Beranda</button>
+    <button class="nav-tab" onclick="goPage('faq',this)">FAQ</button>
     <button class="nav-tab" onclick="goPage('tentang',this)">Tentang</button>
     <button class="nav-tab" onclick="goPage('kebijakan',this)">Kebijakan</button>
   </div>
@@ -516,6 +575,24 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
         <div class="profile-chip" id="chip-join-wrap" style="display:none">📅 <span id="chip-join"></span></div>
       </div>
       <p id="profile-bio" style="display:none"></p>
+    </div>
+  </div>
+
+  <!-- VISITOR COUNTER -->
+  <div class="visitor-bar">
+    <div class="visitor-card">
+      <div class="visitor-dot green"></div>
+      <div class="visitor-info">
+        <span class="visitor-num" id="visitor-online">0</span>
+        <span class="visitor-label">Online sekarang</span>
+      </div>
+    </div>
+    <div class="visitor-card">
+      <div class="visitor-dot blue"></div>
+      <div class="visitor-info">
+        <span class="visitor-num" id="visitor-total">0</span>
+        <span class="visitor-label">Total pengunjung</span>
+      </div>
     </div>
   </div>
 
@@ -592,6 +669,20 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
 
 
 </div><!-- /page-home -->
+
+<!-- ════════════════════════
+  PAGE: FAQ
+════════════════════════ -->
+<div class="page" id="page-faq">
+  <div class="page-section">
+    <div class="page-section-title">FAQ</div>
+    <div class="page-section-sub">Pertanyaan yang sering ditanyakan</div>
+  </div>
+  <input class="faq-search" id="faq-search" placeholder="Cari pertanyaan..." oninput="renderFaq(window._faqData||[], this.value)">
+  <div id="faq-list">
+    <div class="faq-empty">Belum ada FAQ. Tambahkan melalui admin panel.</div>
+  </div>
+</div><!-- /page-faq -->
 
 <!-- ════════════════════════
   PAGE: TENTANG
@@ -715,12 +806,45 @@ document.addEventListener('keydown', e => {
 });
 
 // ── PAGE NAVIGATION ──
-function goPage(name, btn){
+function goPage(name,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   btn.classList.add('active');
   window.scrollTo({top:0,behavior:'smooth'});
+  if(name==='faq'){const s=document.getElementById('faq-search');if(s)s.value='';renderFaq(window._faqData||[],'')}
+}
+
+// ── FAQ ──
+window._faqData=[];
+function renderFaq(items,query){
+  const c=document.getElementById('faq-list');if(!c)return;
+  const q=(query||'').toLowerCase().trim();
+  const f=(items||[]).filter(x=>!q||(x.question||'').toLowerCase().includes(q)||(x.answer||'').toLowerCase().includes(q));
+  if(!f.length){c.innerHTML='<div class="faq-empty">'+(q?'Tidak ada hasil untuk "'+query+'"':'Belum ada FAQ.')+'</div>';return;}
+  const cats={};
+  f.forEach(x=>{const cat=x.category||'Umum';if(!cats[cat])cats[cat]=[];cats[cat].push(x);});
+  let html='';
+  Object.keys(cats).forEach(cat=>{
+    html+='<div class="faq-cat">'+cat+'</div>';
+    cats[cat].forEach((x,i)=>{
+      const id='faq_'+cat.replace(/[^a-z0-9]/gi,'_')+'_'+i;
+      html+='<div class="faq-item" id="'+id+'">'
+        +'<div class="faq-q" onclick="toggleFaq(\''+id+'\')">'
+          +'<span class="faq-q-text">'+x.question+'</span>'
+          +'<span class="faq-icon">&#9660;</span>'
+        +'</div>'
+        +'<div class="faq-a"><div class="faq-a-inner">'+waFormat(x.answer||'')+'</div></div>'
+        +'</div>';
+    });
+  });
+  c.innerHTML=html;
+}
+function toggleFaq(id){
+  const el=document.getElementById(id);if(!el)return;
+  const was=el.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(e=>e.classList.remove('open'));
+  if(!was)el.classList.add('open');
 }
 
 // ── MEDIA MODAL ──
