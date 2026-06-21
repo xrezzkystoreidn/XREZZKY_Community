@@ -53,7 +53,6 @@ function applyData(d){
   // ── PROFILE ──
   const p = d.profile||{};
   if(p.name){
-    // Nav logo = nama pendek (kata pertama saja, atau field shortName kalau ada)
     const shortName = p.shortName || p.name.split(' ')[0];
     setText('nav-logo', shortName);
     setText('profile-name', p.name);
@@ -80,7 +79,7 @@ function applyData(d){
     show('stats-section');
   } else hide('stats-section');
 
-  // ── SOCIAL LINKS (dengan custom icon URL atau emoji) ──
+  // ── SOCIAL LINKS ──
   const socials=(d.socials||[]).filter(s=>s.visible!==false && s.label);
   if(socials.length){
     el('socials-grid').innerHTML=socials.map(s=>`
@@ -102,7 +101,7 @@ function applyData(d){
     show('socials-section');
   } else hide('socials-section');
 
-  // ── WEBLINKS (link website / aplikasi) ──
+  // ── WEBLINKS ──
   const weblinks=(d.weblinks||[]).filter(w=>w.visible!==false && w.label);
   if(weblinks.length){
     el('weblinks-grid').innerHTML=weblinks.map(w=>`
@@ -236,26 +235,32 @@ function applyData(d){
   if(f.tagline){ setText('footer-tagline', f.tagline); show('footer-tagline'); } else hide('footer-tagline');
 }
 
-_db.ref('siteData').on('value', snap => { if(snap.exists()) applyData(snap.val()); });
-
+// Mengambil data dari Firebase (Hanya dipanggil sekali)
 _db.ref('siteData').on('value', snap => { if(snap.exists()) applyData(snap.val()); });
 
 // ── VISITOR COUNTER ──────────────────────────────
 (function(){
-  // Buat session ID per tab
+  // Buat session ID per tab agar tidak duplikat saat refresh cepat
   let sid = sessionStorage.getItem('_sid');
   if(!sid){
     sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
     sessionStorage.setItem('_sid', sid);
   }
 
-  const ref = _db.ref('onlineNow/' + sid);
+  const myPresenceRef = _db.ref('onlineNow/' + sid);
 
-  // Set saat buka, hapus saat tutup
-  ref.set(true);
-  ref.onDisconnect().remove();
+  // Menggunakan .info/connected milik Firebase agar sinkronisasi onDisconnect akurat
+  _db.ref('.info/connected').on('value', function(snapshot) {
+    if (snapshot.val() === true) {
+      myPresenceRef.set(true);
+      myPresenceRef.onDisconnect().remove();
+    }
+  });
 
-  window.addEventListener('beforeunload', function(){ ref.remove(); });
+  // Hapus manual jika user menutup tab / beralih halaman
+  window.addEventListener('beforeunload', function(){ 
+    myPresenceRef.remove(); 
+  });
 
   // Hitung total unik pakai localStorage
   if(!localStorage.getItem('_visited')){
@@ -263,7 +268,7 @@ _db.ref('siteData').on('value', snap => { if(snap.exists()) applyData(snap.val()
     _db.ref('totalVisit').transaction(function(n){ return (n||0)+1; });
   }
 
-  // Tampilkan
+  // Tampilkan data secara Real-time ke elemen HTML
   _db.ref('onlineNow').on('value', function(s){
     const el = document.getElementById('visitor-online');
     if(el) el.textContent = s.numChildren();
@@ -481,8 +486,6 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
 }
 
 /* ── RESPONSIVE ── */
-
-/* Desktop */
 @media(min-width:900px){
   .nav{height:62px;padding:0 40px}
   .nav-logo{font-size:20px}
@@ -504,7 +507,6 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
   .page-section-title{font-size:24px}
 }
 
-/* Tablet */
 @media(min-width:600px) and (max-width:899px){
   .nav{height:58px;padding:0 24px}
   .nav-tab{padding:7px 14px;font-size:13px}
@@ -516,7 +518,6 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
   #stats-grid{grid-template-columns:repeat(4,1fr);gap:10px}
 }
 
-/* Mobile */
 @media(max-width:599px){
   .nav{height:50px;padding:0 12px;gap:4px}
   .nav-logo{font-size:14px}
@@ -535,7 +536,6 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
   .social-icon-wrap,.weblink-icon,.wa-item-icon{width:34px;height:34px}
 }
 
-/* HP sangat kecil */
 @media(max-width:360px){
   .nav-tab{padding:4px 7px;font-size:10px}
   .nav-contact{display:none}
@@ -546,7 +546,6 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
 <body>
 <div class="accent-glow"></div>
 
-<!-- ── NAV ── -->
 <nav class="nav">
   <div class="nav-logo" id="nav-logo"></div>
   <div class="nav-tabs">
@@ -558,12 +557,8 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
   <a href="mailto:xrezzkystore.idn@gmail.com" class="nav-contact">Kontak Admin</a>
 </nav>
 
-<!-- ════════════════════════
-  PAGE: BERANDA
-════════════════════════ -->
 <div class="page active" id="page-home">
 
-  <!-- HERO -->
   <div class="hero">
     <div id="banner-bg"></div>
     <div class="hero-body">
@@ -586,7 +581,6 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
     </div>
   </div>
 
-  <!-- VISITOR COUNTER -->
   <div class="visitor-bar">
     <div class="visitor-card">
       <div class="visitor-dot green"></div>
@@ -604,7 +598,6 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
     </div>
   </div>
 
-  <!-- ANNOUNCEMENTS -->
   <div class="section-block" id="ann-section" style="display:none">
     <div class="card">
       <div class="card-title"><div class="card-dot"></div> Pengumuman Terbaru</div>
@@ -612,13 +605,11 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
     </div>
   </div>
 
-  <!-- STATS -->
   <div class="section-block" id="stats-section" style="display:none">
     <div class="sec-label">Overview</div>
     <div id="stats-grid"></div>
   </div>
 
-  <!-- SOCIAL LINKS -->
   <div class="section-block" id="socials-section" style="display:none">
     <div class="card">
       <div class="card-title"><div class="card-dot"></div> Sosial Media</div>
@@ -626,7 +617,6 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
     </div>
   </div>
 
-  <!-- WEBLINKS -->
   <div class="section-block" id="weblinks-section" style="display:none">
     <div class="card">
       <div class="card-title"><div class="card-dot"></div> Link Website & Aplikasi</div>
@@ -634,7 +624,6 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
     </div>
   </div>
 
-  <!-- WHATSAPP LINKS -->
   <div class="section-block" id="wa-section" style="display:none">
     <div class="card">
       <div class="wa-header">
@@ -647,19 +636,16 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
         </div>
       </div>
 
-      <!-- GRUP -->
       <div id="wa-grup-wrap" style="display:none">
         <div class="wa-group-label">💬 Grup WhatsApp</div>
         <div id="wa-grup-list"></div>
       </div>
 
-      <!-- KOMUNITAS -->
       <div id="wa-komunitas-wrap" style="display:none">
         <div class="wa-group-label">🏘 Komunitas WhatsApp</div>
         <div id="wa-komunitas-list"></div>
       </div>
 
-      <!-- SALURAN -->
       <div id="wa-saluran-wrap" style="display:none">
         <div class="wa-group-label">📢 Saluran WhatsApp</div>
         <div id="wa-saluran-list"></div>
@@ -667,7 +653,6 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
     </div>
   </div>
 
-  <!-- SERVICES -->
   <div class="section-block" id="services-section" style="display:none">
     <div class="card">
       <div class="card-title"><div class="card-dot"></div> Layanan</div>
@@ -675,13 +660,7 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
     </div>
   </div>
 
-
-</div><!-- /page-home -->
-
-<!-- ════════════════════════
-  PAGE: FAQ
-════════════════════════ -->
-<div class="page" id="page-faq">
+</div><div class="page" id="page-faq">
   <div class="page-section">
     <div class="page-section-title">FAQ</div>
     <div class="page-section-sub">Pertanyaan yang sering ditanyakan</div>
@@ -690,12 +669,7 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
   <div id="faq-list">
     <div class="faq-empty">Belum ada FAQ. Tambahkan melalui admin panel.</div>
   </div>
-</div><!-- /page-faq -->
-
-<!-- ════════════════════════
-  PAGE: TENTANG
-════════════════════════ -->
-<div class="page" id="page-tentang">
+</div><div class="page" id="page-tentang">
   <div class="page-section">
     <div class="page-section-title">Tentang Kami</div>
     <div class="page-section-sub">Kenali lebih jauh siapa kami dan apa yang kami lakukan</div>
@@ -706,7 +680,6 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
     <div class="prose" id="about-content"></div>
   </div>
 
-  <!-- Kontak Admin -->
   <div class="card">
     <div class="card-title"><div class="card-dot"></div> Hubungi Admin</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:4px">Untuk pertanyaan, laporan, atau kerjasama — hubungi kami langsung melalui email:</p>
@@ -720,13 +693,7 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
       </div>
     </a>
   </div>
-
-</div><!-- /page-tentang -->
-
-<!-- ════════════════════════
-  PAGE: KEBIJAKAN
-════════════════════════ -->
-<div class="page" id="page-kebijakan">
+</div><div class="page" id="page-kebijakan">
   <div class="page-section">
     <div class="page-section-title">Kebijakan & Aturan</div>
     <div class="page-section-sub">Harap baca dan pahami kebijakan penggunaan layanan kami</div>
@@ -750,21 +717,14 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
       </div>
     </a>
   </div>
-
-</div><!-- /page-kebijakan -->
-
-<!-- ── FOOTER ── -->
-<footer>
+</div><footer>
   <div id="footer-copy" style="display:none"></div>
   <div id="footer-tagline" style="display:none"></div>
 </footer>
-</footer>
 
-<!-- ── MEDIA MODAL ── -->
 <div id="media-modal" onclick="closeMediaModal()">
   <div id="media-modal-inner" onclick="event.stopPropagation()">
-    <img id="modal-img" src="" alt="" draggable="false" style="display:none"
-      oncontextmenu="return false">
+    <img id="modal-img" src="" alt="" draggable="false" style="display:none" oncontextmenu="return false">
     <video id="modal-vid" controls playsinline style="display:none"></video>
   </div>
   <button id="modal-close" onclick="closeMediaModal()">✕</button>
@@ -772,61 +732,24 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
 
 <script>
 // ── PAGE NAVIGATION ──
-function goPage(name, btn){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
-  document.getElementById('page-'+name).classList.add('active');
-  btn.classList.add('active');
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-
-// ── MEDIA MODAL ──
-function openMediaModal(url, type) {
-  const modal = document.getElementById('media-modal');
-  const img   = document.getElementById('modal-img');
-  const vid   = document.getElementById('modal-vid');
-  if(type === 'video') {
-    img.style.display = 'none';
-    vid.style.display = 'block';
-    vid.src = url;
-    vid.play().catch(()=>{});
-  } else {
-    vid.style.display = 'none';
-    img.style.display = 'block';
-    img.src = url;
-  }
-  modal.classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeMediaModal() {
-  const modal = document.getElementById('media-modal');
-  const vid   = document.getElementById('modal-vid');
-  modal.classList.remove('open');
-  vid.pause();
-  vid.src = '';
-  document.body.style.overflow = '';
-}
-
-// Tutup modal dengan tombol back/escape
-document.addEventListener('keydown', e => {
-  if(e.key === 'Escape') closeMediaModal();
-});
-
-// ── PAGE NAVIGATION ──
 function goPage(name,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
-  document.getElementById('page-'+name).classList.add('active');
-  btn.classList.add('active');
+  const targetPage = document.getElementById('page-'+name);
+  if(targetPage) targetPage.classList.add('active');
+  if(btn) btn.classList.add('active');
   window.scrollTo({top:0,behavior:'smooth'});
-  if(name==='faq'){const s=document.getElementById('faq-search');if(s)s.value='';renderFaq(window._faqData||[],'')}
+  if(name==='faq'){
+    const s=document.getElementById('faq-search');
+    if(s)s.value='';
+    renderFaq(window._faqData||[],'');
+  }
 }
 
-// ── FAQ ──
+// ── FAQ LOGIC ──
 window._faqData=[];
 function renderFaq(items,query){
-  const c=document.getElementById('faq-list');if(!c)return;
+  const c=document.getElementById('faq-list'); if(!c)return;
   const q=(query||'').toLowerCase().trim();
   const f=(items||[]).filter(x=>!q||(x.question||'').toLowerCase().includes(q)||(x.answer||'').toLowerCase().includes(q));
   if(!f.length){c.innerHTML='<div class="faq-empty">'+(q?'Tidak ada hasil untuk "'+query+'"':'Belum ada FAQ.')+'</div>';return;}
@@ -848,6 +771,7 @@ function renderFaq(items,query){
   });
   c.innerHTML=html;
 }
+
 function toggleFaq(id){
   const el=document.getElementById(id);if(!el)return;
   const was=el.classList.contains('open');
@@ -877,9 +801,11 @@ function openMediaModal(url, type) {
 function closeMediaModal() {
   const modal = document.getElementById('media-modal');
   const vid   = document.getElementById('modal-vid');
-  modal.classList.remove('open');
-  vid.pause();
-  vid.src = '';
+  if(modal) modal.classList.remove('open');
+  if(vid) {
+    vid.pause();
+    vid.src = '';
+  }
   document.body.style.overflow = '';
 }
 
