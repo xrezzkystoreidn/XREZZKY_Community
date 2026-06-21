@@ -238,24 +238,33 @@ function applyData(d){
 
 _db.ref('siteData').on('value', snap => { if(snap.exists()) applyData(snap.val()); });
 
+_db.ref('siteData').on('value', snap => { if(snap.exists()) applyData(snap.val()); });
+
 // ── VISITOR COUNTER ──────────────────────────────
 (function(){
-  // Generate session ID unik per tab
   let sid = sessionStorage.getItem('_vsid');
   if(!sid){
     sid = Date.now().toString(36) + Math.random().toString(36).slice(2,8);
     sessionStorage.setItem('_vsid', sid);
-
-    // Tambah total pengunjung (hanya sekali per session)
-    _db.ref('visitorCount').transaction(cur => (cur||0) + 1);
+    // Increment total pakai ServerValue
+    _db.ref('visitorCount').set(firebase.database.ServerValue.increment(1));
   }
 
-  // Online sekarang — tulis presence, hapus saat disconnect
+  // Presence — deteksi koneksi dulu
   const presRef = _db.ref('onlineNow/' + sid);
-  presRef.set(true);
-  presRef.onDisconnect().remove();
+  _db.ref('.info/connected').on('value', snap => {
+    if(!snap.val()) return;
+    presRef.onDisconnect().remove();
+    presRef.set(true);
+  });
+  // Hapus saat tab ditutup
+  window.addEventListener('beforeunload', () => presRef.remove());
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden) presRef.remove();
+    else presRef.set(true);
+  });
 
-  // Tampilkan realtime
+  // Realtime display
   _db.ref('visitorCount').on('value', s => {
     const el = document.getElementById('visitor-total');
     if(el) el.textContent = (s.val()||0).toLocaleString('id-ID');
