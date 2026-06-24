@@ -27,7 +27,6 @@ function show(id){ const e=el(id); if(e) e.style.display=''; }
 function hide(id){ const e=el(id); if(e) e.style.display='none'; }
 function setText(id,val){ const e=el(id); if(e) e.textContent=val; }
 
-// ── WA TEXT FORMATTER — defined BEFORE applyData ──
 function waFormat(text){
   if(!text) return '';
   return text
@@ -42,270 +41,165 @@ function waFormat(text){
 
 function applyData(d){
   if(!d) return;
+  const t=d.theme||{};
+  if(t.accentColor)     document.documentElement.style.setProperty('--accent',t.accentColor);
+  if(t.accentSecondary) document.documentElement.style.setProperty('--accent2',t.accentSecondary);
+  if(t.bgPrimary)       document.documentElement.style.setProperty('--bg',t.bgPrimary);
+  if(t.bgCard)          document.documentElement.style.setProperty('--card',t.bgCard);
 
-  // ── THEME ──
-  const t = d.theme||{};
-  if(t.accentColor)     document.documentElement.style.setProperty('--accent',  t.accentColor);
-  if(t.accentSecondary) document.documentElement.style.setProperty('--accent2', t.accentSecondary);
-  if(t.bgPrimary)       document.documentElement.style.setProperty('--bg',      t.bgPrimary);
-  if(t.bgCard)          document.documentElement.style.setProperty('--card',    t.bgCard);
+  const p=d.profile||{};
+  if(p.name){ const s=p.shortName||p.name.split(' ')[0]; setText('nav-logo',s); setText('profile-name',p.name); show('profile-name'); } else hide('profile-name');
+  if(p.badge){  setText('profile-badge',p.badge);   show('profile-badge'); }   else hide('profile-badge');
+  if(p.tagline){setText('profile-tagline',p.tagline);show('profile-tagline');} else hide('profile-tagline');
+  if(p.bio){    setText('profile-bio',p.bio);        show('profile-bio'); }    else hide('profile-bio');
+  if(p.location){setText('chip-location',p.location);show('chip-location-wrap');} else hide('chip-location-wrap');
+  if(p.joinYear){setText('chip-join','Bergabung '+p.joinYear);show('chip-join-wrap');} else hide('chip-join-wrap');
+  if(p.avatarUrl){el('profile-avatar').src=p.avatarUrl;el('profile-avatar').style.background='none';}
+  else{el('profile-avatar').removeAttribute('src');el('profile-avatar').style.background='linear-gradient(135deg,var(--accent),var(--accent2))';}
+  if(p.bannerUrl){const b=el('banner-bg');b.style.backgroundImage='url('+p.bannerUrl+')';b.style.backgroundSize='cover';b.style.backgroundPosition='center';}
 
-  // ── PROFILE ──
-  const p = d.profile||{};
-  if(p.name){
-    const shortName = p.shortName || p.name.split(' ')[0];
-    setText('nav-logo', shortName);
-    setText('profile-name', p.name);
-    show('profile-name');
-  } else { hide('profile-name'); }
-  if(p.badge){  setText('profile-badge',   p.badge);   show('profile-badge'); }   else hide('profile-badge');
-  if(p.tagline){setText('profile-tagline', p.tagline); show('profile-tagline'); } else hide('profile-tagline');
-  if(p.bio){    setText('profile-bio',     p.bio);     show('profile-bio'); }     else hide('profile-bio');
-  if(p.location){ setText('chip-location', p.location); show('chip-location-wrap'); } else hide('chip-location-wrap');
-  if(p.joinYear){ setText('chip-join', `Bergabung ${p.joinYear}`); show('chip-join-wrap'); } else hide('chip-join-wrap');
-  if(p.avatarUrl){ el('profile-avatar').src=p.avatarUrl; el('profile-avatar').style.background='none'; }
-  else { el('profile-avatar').removeAttribute('src'); el('profile-avatar').style.background='linear-gradient(135deg,var(--accent),var(--accent2))'; }
-  if(p.bannerUrl){ const b=el('banner-bg'); b.style.backgroundImage=`url(${p.bannerUrl})`; b.style.backgroundSize='cover'; b.style.backgroundPosition='center'; }
-
-  // ── STATS ──
   const stats=(d.stats||[]).filter(s=>s.value||s.label);
   if(stats.length){
-    el('stats-grid').innerHTML=stats.map(s=>`
-      <div class="stat-card">
-        ${s.icon?`<span class="stat-icon">${s.icon}</span>`:''}
-        <span class="stat-value">${s.value||''}</span>
-        <span class="stat-label">${s.label||''}</span>
-      </div>`).join('');
+    el('stats-grid').innerHTML=stats.map(s=>'<div class="stat-card">'+(s.icon?'<span class="stat-icon">'+s.icon+'</span>':'')+'<span class="stat-value">'+s.value+'</span><span class="stat-label">'+s.label+'</span></div>').join('');
     show('stats-section');
   } else hide('stats-section');
 
-  // ── SOCIAL LINKS ──
-  const socials=(d.socials||[]).filter(s=>s.visible!==false && s.label);
+  const socials=(d.socials||[]).filter(s=>s.visible!==false&&s.label);
   if(socials.length){
-    el('socials-grid').innerHTML=socials.map(s=>`
-      <a href="${s.url||'#'}" class="social-btn" target="_blank" rel="noopener" style="--lc:${s.color||'#ffffff'}">
-        <div class="social-icon-wrap">
-          ${s.iconUrl
-            ? `<img src="${s.iconUrl}" class="social-img" alt="${s.label}" onerror="this.style.display='none';this.nextSibling.style.display='flex'">`
-            : ''}
-          <div class="social-emoji" style="${s.iconUrl?'display:none':''}">
-            ${s.emoji||'🔗'}
-          </div>
-        </div>
-        <div class="social-info">
-          <span class="social-name">${s.label}</span>
-          ${s.handle?`<span class="social-handle">${s.handle}</span>`:''}
-        </div>
-        <svg class="social-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
-      </a>`).join('');
+    el('socials-grid').innerHTML=socials.map(s=>`<a href="${s.url||'#'}" class="social-btn" target="_blank" rel="noopener" style="--lc:${s.color||'#fff'}"><div class="social-icon-wrap">${s.iconUrl?`<img src="${s.iconUrl}" class="social-img" alt="${s.label}" onerror="this.style.display='none';this.nextSibling.style.display='flex'">`:''}<div class="social-emoji" style="${s.iconUrl?'display:none':''}">${s.emoji||'🔗'}</div></div><div class="social-info"><span class="social-name">${s.label}</span>${s.handle?`<span class="social-handle">${s.handle}</span>`:''}</div><svg class="social-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg></a>`).join('');
     show('socials-section');
   } else hide('socials-section');
 
-  // ── WEBLINKS ──
-  const weblinks=(d.weblinks||[]).filter(w=>w.visible!==false && w.label);
+  const weblinks=(d.weblinks||[]).filter(w=>w.visible!==false&&w.label);
   if(weblinks.length){
-    el('weblinks-grid').innerHTML=weblinks.map(w=>`
-      <a href="${w.url||'#'}" class="weblink-btn" target="_blank" rel="noopener" style="--lc:${w.color||'var(--accent)'}">
-        <div class="weblink-icon">${w.emoji||'🌐'}</div>
-        <div class="weblink-info">
-          <span class="weblink-name">${w.label}</span>
-          ${w.desc?`<span class="weblink-desc">${w.desc}</span>`:''}
-        </div>
-        <svg class="social-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
-      </a>`).join('');
+    el('weblinks-grid').innerHTML=weblinks.map(w=>`<a href="${w.url||'#'}" class="weblink-btn" target="_blank" rel="noopener" style="--lc:${w.color||'var(--accent)'}"><div class="weblink-icon">${w.emoji||'🌐'}</div><div class="weblink-info"><span class="weblink-name">${w.label}</span>${w.desc?`<span class="weblink-desc">${w.desc}</span>`:''}</div><svg class="social-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg></a>`).join('');
     show('weblinks-section');
   } else hide('weblinks-section');
 
-  // ── SERVICES ──
   const svcs=(d.services||[]).filter(s=>s.title);
   if(svcs.length){
-    el('services-grid').innerHTML=svcs.map(s=>`
-      <div class="service-card">
-        ${s.icon?`<div class="service-icon">${s.icon}</div>`:''}
-        <div>
-          <div class="service-title">${s.title}</div>
-          ${s.desc?`<div class="service-desc">${s.desc}</div>`:''}
-        </div>
-      </div>`).join('');
+    el('services-grid').innerHTML=svcs.map(s=>`<div class="service-card">${s.icon?`<div class="service-icon">${s.icon}</div>`:''}<div><div class="service-title">${s.title}</div>${s.desc?`<div class="service-desc">${s.desc}</div>`:''}</div></div>`).join('');
     show('services-section');
   } else hide('services-section');
 
-  // ── ANNOUNCEMENTS ──
   const anns=(d.announcements||[]).filter(a=>a.text);
   if(anns.length){
-    el('ann-list').innerHTML=anns.map((a,i)=>`
-      <div class="ann-item">
-        <div class="ann-main">
-          <div class="ann-header">
-            ${a.tag?`<span class="ann-tag" style="background:${a.color||'#3b8df1'}22;color:${a.color||'#3b8df1'};border-color:${a.color||'#3b8df1'}44">${a.tag}</span>`:''}
-            ${a.time?`<span class="ann-time">${a.time}</span>`:''}
-          </div>
-          <span class="ann-text">${waFormat(a.text)}</span>
-          ${a.mediaUrl?`
-          <div class="ann-media-wrap" onclick="openMediaModal('${a.mediaUrl}','${a.mediaType||'image'}')">
-            <div class="ann-media-protect">
-              ${a.mediaType==='video'
-                ?`<video src="${a.mediaUrl}" class="ann-media" playsinline preload="metadata"></video>`
-                :`<img src="${a.mediaUrl}" class="ann-media" alt="media" draggable="false">`
-              }
-              <div class="ann-media-overlay"><span>Ketuk untuk perbesar</span></div>
-            </div>
-          </div>`:''}
-        </div>
-      </div>`).join('');
+    el('ann-list').innerHTML=anns.map((a,i)=>`<div class="ann-item"><div class="ann-main"><div class="ann-header">${a.tag?`<span class="ann-tag" style="background:${a.color||'#3b8df1'}22;color:${a.color||'#3b8df1'};border-color:${a.color||'#3b8df1'}44">${a.tag}</span>`:''}<button class="share-btn" onclick="shareContent('${encodeURIComponent((a.tag?'['+a.tag+'] ':'')+a.text.replace(/[*_~`]/g,''))}','ann')" title="Bagikan"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>${a.time?`<span class="ann-time">${a.time}</span>`:''}</div><span class="ann-text">${waFormat(a.text)}</span>${a.mediaUrl?`<div class="ann-media-wrap" onclick="openMediaModal('${a.mediaUrl}','${a.mediaType||'image'}')"><div class="ann-media-protect">${a.mediaType==='video'?`<video src="${a.mediaUrl}" class="ann-media" playsinline preload="metadata"></video>`:`<img src="${a.mediaUrl}" class="ann-media" alt="media" draggable="false">`}<div class="ann-media-overlay"><span>Ketuk untuk perbesar</span></div></div></div>`:''}</div></div>`).join('');
     show('ann-section');
   } else hide('ann-section');
 
-  // ── TENTANG ──
-  const about = d.about||{};
-  if(about.content){ el('about-content').innerHTML=waFormat(about.content); show('about-section'); }
-  else hide('about-section');
+  const about=d.about||{};
+  if(about.content){el('about-content').innerHTML=waFormat(about.content);show('about-section');} else hide('about-section');
+  const policy=d.policy||{};
+  if(policy.content){el('policy-content').innerHTML=waFormat(policy.content);show('policy-section');} else hide('policy-section');
 
-  // ── KEBIJAKAN ──
-  const policy = d.policy||{};
-  if(policy.content){ el('policy-content').innerHTML=waFormat(policy.content); show('policy-section'); }
-  else hide('policy-section');
-
-  // ── WHATSAPP LINKS ──
-  const wa = d.whatsapp||{};
-
-  // Grup WA
+  const wa=d.whatsapp||{};
   const waGrup=(wa.grup||[]).filter(g=>g.name&&g.url);
-  if(waGrup.length){
-    el('wa-grup-list').innerHTML=waGrup.map(g=>`
-      <a href="${g.url}" class="wa-item" target="_blank" rel="noopener">
-        <div class="wa-item-icon" style="background:rgba(37,211,102,0.12)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.554 4.121 1.524 5.855L.058 23.75a.5.5 0 0 0 .61.638l6.09-1.596A11.947 11.947 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.9a9.87 9.87 0 0 1-5.031-1.378l-.36-.214-3.732.978.995-3.636-.235-.374A9.861 9.861 0 0 1 2.1 12C2.1 6.534 6.534 2.1 12 2.1c5.466 0 9.9 4.434 9.9 9.9 0 5.466-4.434 9.9-9.9 9.9z"/></svg>
-        </div>
-        <div class="wa-item-info">
-          <span class="wa-item-name">${g.name}</span>
-          ${g.desc?`<span class="wa-item-desc">${g.desc}</span>`:''}
-        </div>
-        <div class="wa-item-badge" style="background:rgba(37,211,102,0.1);border-color:rgba(37,211,102,0.25);color:#86efac">Grup</div>
-        <svg class="social-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
-      </a>`).join('');
-    show('wa-grup-wrap');
-  } else hide('wa-grup-wrap');
+  if(waGrup.length){el('wa-grup-list').innerHTML=waGrup.map(g=>`<a href="${g.url}" class="wa-item" target="_blank" rel="noopener"><div class="wa-item-icon" style="background:rgba(37,211,102,0.12)"><svg width="18" height="18" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.554 4.121 1.524 5.855L.058 23.75a.5.5 0 0 0 .61.638l6.09-1.596A11.947 11.947 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.9a9.87 9.87 0 0 1-5.031-1.378l-.36-.214-3.732.978.995-3.636-.235-.374A9.861 9.861 0 0 1 2.1 12C2.1 6.534 6.534 2.1 12 2.1c5.466 0 9.9 4.434 9.9 9.9 0 5.466-4.434 9.9-9.9 9.9z"/></svg></div><div class="wa-item-info"><span class="wa-item-name">${g.name}</span>${g.desc?`<span class="wa-item-desc">${g.desc}</span>`:''}</div><div class="wa-item-badge" style="background:rgba(37,211,102,0.1);border-color:rgba(37,211,102,0.25);color:#86efac">Grup</div><svg class="social-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg></a>`).join('');show('wa-grup-wrap');} else hide('wa-grup-wrap');
+  const waKom=(wa.komunitas||[]).filter(g=>g.name&&g.url);
+  if(waKom.length){el('wa-komunitas-list').innerHTML=waKom.map(g=>`<a href="${g.url}" class="wa-item" target="_blank" rel="noopener"><div class="wa-item-icon" style="background:rgba(37,211,102,0.12)"><svg width="18" height="18" viewBox="0 0 24 24" fill="#25D366"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg></div><div class="wa-item-info"><span class="wa-item-name">${g.name}</span>${g.desc?`<span class="wa-item-desc">${g.desc}</span>`:''}</div><div class="wa-item-badge" style="background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.25);color:#93c5fd">Komunitas</div><svg class="social-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg></a>`).join('');show('wa-komunitas-wrap');} else hide('wa-komunitas-wrap');
+  const waSal=(wa.saluran||[]).filter(g=>g.name&&g.url);
+  if(waSal.length){el('wa-saluran-list').innerHTML=waSal.map(g=>`<a href="${g.url}" class="wa-item" target="_blank" rel="noopener"><div class="wa-item-icon" style="background:rgba(124,58,237,0.12)"><svg width="18" height="18" viewBox="0 0 24 24" fill="#a78bfa"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg></div><div class="wa-item-info"><span class="wa-item-name">${g.name}</span>${g.desc?`<span class="wa-item-desc">${g.desc}</span>`:''}</div><div class="wa-item-badge" style="background:rgba(124,58,237,0.1);border-color:rgba(124,58,237,0.25);color:#c4b5fd">Saluran</div><svg class="social-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg></a>`).join('');show('wa-saluran-wrap');} else hide('wa-saluran-wrap');
+  const hasWa=waGrup.length||waKom.length||waSal.length;
+  if(hasWa)show('wa-section');else hide('wa-section');
 
-  // Komunitas WA
-  const waKomunitas=(wa.komunitas||[]).filter(g=>g.name&&g.url);
-  if(waKomunitas.length){
-    el('wa-komunitas-list').innerHTML=waKomunitas.map(g=>`
-      <a href="${g.url}" class="wa-item" target="_blank" rel="noopener">
-        <div class="wa-item-icon" style="background:rgba(37,211,102,0.12)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="#25D366"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
-        </div>
-        <div class="wa-item-info">
-          <span class="wa-item-name">${g.name}</span>
-          ${g.desc?`<span class="wa-item-desc">${g.desc}</span>`:''}
-        </div>
-        <div class="wa-item-badge" style="background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.25);color:#93c5fd">Komunitas</div>
-        <svg class="social-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
-      </a>`).join('');
-    show('wa-komunitas-wrap');
-  } else hide('wa-komunitas-wrap');
+  window._faqData=Array.isArray(d.faq)?d.faq:[];
+  renderFaq(window._faqData,'');
 
-  // Saluran WA
-  const waSaluran=(wa.saluran||[]).filter(g=>g.name&&g.url);
-  if(waSaluran.length){
-    el('wa-saluran-list').innerHTML=waSaluran.map(g=>`
-      <a href="${g.url}" class="wa-item" target="_blank" rel="noopener">
-        <div class="wa-item-icon" style="background:rgba(124,58,237,0.12)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="#a78bfa"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-        </div>
-        <div class="wa-item-info">
-          <span class="wa-item-name">${g.name}</span>
-          ${g.desc?`<span class="wa-item-desc">${g.desc}</span>`:''}
-        </div>
-        <div class="wa-item-badge" style="background:rgba(124,58,237,0.1);border-color:rgba(124,58,237,0.25);color:#c4b5fd">Saluran</div>
-        <svg class="social-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
-      </a>`).join('');
-    show('wa-saluran-wrap');
-  } else hide('wa-saluran-wrap');
-
-  // Tampilkan/sembunyikan section WA keseluruhan
-  const hasWa = waGrup.length||waKomunitas.length||waSaluran.length;
-  if(hasWa) show('wa-section'); else hide('wa-section');
-
-  // ── FAQ ──
-  window._faqData = d.faq || [];
-  renderFaq(window._faqData, '');
   const f=d.footer||{};
-  if(f.copy){    setText('footer-copy',    f.copy);    show('footer-copy'); }    else hide('footer-copy');
-  if(f.tagline){ setText('footer-tagline', f.tagline); show('footer-tagline'); } else hide('footer-tagline');
+  if(f.copy){setText('footer-copy',f.copy);show('footer-copy');}else hide('footer-copy');
+  if(f.tagline){setText('footer-tagline',f.tagline);show('footer-tagline');}else hide('footer-tagline');
 }
 
-// Mengambil data dari Firebase (Hanya dipanggil sekali)
-_db.ref('siteData').on('value', snap => { if(snap.exists()) applyData(snap.val()); });
+// Satu listener saja
+_db.ref('siteData').on('value', function(snap){ if(snap.exists()) applyData(snap.val()); });
 
-// ── VISITOR COUNTER ──────────────────────────────
+// ── VISITOR COUNTER ──────────────────────────────────────────────────
+// Quota max per hari diambil dari DB (siteData/visitorQuota), default 10
+// Lock ID: pakai 3 lapis — localStorage key acak, fingerprint device, dan sessionStorage
 (function(){
-  // sid unik per tab/sesi browser (dibuat ulang tiap kali tab baru dibuka)
-  const sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
-  const myPresenceRef = _db.ref('onlineNow/' + sid);
-  let hasCountedView = false;
+  var QUOTA_KEY = '_xvq2';
+  var DEVICE_KEY = '_xdid2';
+  var defaultQuota = 10;
+  var quotaMax = defaultQuota;
 
-  // ── QUOTA HARIAN PER-DEVICE (silent, internal saja) ──────────
-  // Maksimal 10 page-view dihitung ke totalVisit per device per hari.
-  // Reset memakai waktu LOKAL device user (bukan waktu server),
-  // jadi tiap device reset di tengah malam menurut jamnya sendiri.
-  // Lewat dari 10x: device tetap bisa buka web & tetap dihitung "online",
-  // hanya saja tidak lagi menambah totalVisit.
-  const QUOTA_KEY = '_vq';
-  const QUOTA_MAX = 10;
-  function todayLocalKey(){
-    const d = new Date();
-    return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+  // Ambil quota dari DB (async, non-blocking)
+  _db.ref('siteData/visitorQuota').once('value', function(s){
+    if(s.val() && typeof s.val()==='number') quotaMax = s.val();
+  });
+
+  // Device fingerprint ringan — kombinasi beberapa faktor
+  function getFingerprint(){
+    var nav = window.navigator;
+    var parts = [
+      nav.language||'',
+      nav.platform||'',
+      (nav.hardwareConcurrency||0).toString(),
+      screen.width+'x'+screen.height,
+      screen.colorDepth||0,
+      new Date().getTimezoneOffset()
+    ];
+    // Hash sederhana
+    var str = parts.join('|');
+    var h = 0;
+    for(var i=0;i<str.length;i++){h=Math.imul(31,h)+str.charCodeAt(i)|0;}
+    return Math.abs(h).toString(36);
   }
-  function canCountView(){
-    let raw;
-    try { raw = JSON.parse(localStorage.getItem(QUOTA_KEY) || 'null'); } catch(e){ raw = null; }
-    const today = todayLocalKey();
-    if(!raw || raw.d !== today){
-      raw = { d: today, c: 0 };
-    }
-    if(raw.c >= QUOTA_MAX) return false;
-    raw.c += 1;
-    try { localStorage.setItem(QUOTA_KEY, JSON.stringify(raw)); } catch(e){}
+
+  // Device ID: simpan di localStorage dengan key yang tidak obvious
+  // Gabungkan fingerprint + random ID untuk keunikan lebih kuat
+  var fp = getFingerprint();
+  var stored = null;
+  try{ stored = localStorage.getItem(DEVICE_KEY); }catch(e){}
+  var deviceId;
+  if(stored){
+    deviceId = stored;
+  } else {
+    deviceId = fp + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+    try{ localStorage.setItem(DEVICE_KEY, deviceId); }catch(e){}
+  }
+
+  // Quota harian — reset tiap hari
+  function todayKey(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  function canCount(){
+    var raw=null;
+    try{ raw=JSON.parse(localStorage.getItem(QUOTA_KEY)||'null'); }catch(e){}
+    var today=todayKey();
+    if(!raw||raw.d!==today) raw={d:today,c:0};
+    if(raw.c>=quotaMax) return false;
+    raw.c+=1;
+    try{ localStorage.setItem(QUOTA_KEY,JSON.stringify(raw)); }catch(e){}
     return true;
   }
 
-  // .info/connected akan fire setiap kali koneksi (ter)sambung,
-  // termasuk saat reconnect. Pasang guard biar totalVisit cuma
-  // ke-increment SEKALI per page load, tapi presence tetap
-  // di-resync tiap kali reconnect (biar onDisconnect selalu fresh).
-  _db.ref('.info/connected').on('value', function(snapshot) {
-    if (snapshot.val() === true) {
-      myPresenceRef.set(true);
-      myPresenceRef.onDisconnect().remove();
+  // Presence per-tab
+  var sid = Date.now().toString(36)+Math.random().toString(36).slice(2);
+  var presRef = _db.ref('onlineNow/'+sid);
+  var counted = false;
 
-      if(!hasCountedView){
-        hasCountedView = true;
-        // Hitung sebagai page view: nambah TIAP KALI web dibuka,
-        // tapi dibatasi quota harian per device (silent, tidak
-        // ditampilkan ke user sama sekali).
-        if(canCountView()){
-          _db.ref('totalVisit').transaction(function(n){ return (n||0)+1; });
-        }
+  _db.ref('.info/connected').on('value', function(s){
+    if(!s.val()) return;
+    presRef.onDisconnect().remove();
+    presRef.set(true);
+    if(!counted){
+      counted = true;
+      if(canCount()){
+        _db.ref('totalVisit').transaction(function(n){ return (n||0)+1; });
       }
     }
   });
 
-  // Hapus presence manual saat tab ditutup / pindah halaman.
-  // pagehide lebih reliable daripada beforeunload, terutama di mobile
-  // (Safari iOS sering nggak fire beforeunload saat swipe-close tab).
-  function cleanup(){ myPresenceRef.remove(); }
+  function cleanup(){ presRef.remove(); }
   window.addEventListener('pagehide', cleanup);
   window.addEventListener('beforeunload', cleanup);
 
-  // Tampilkan data secara Real-time ke elemen HTML
   _db.ref('onlineNow').on('value', function(s){
-    const el = document.getElementById('visitor-online');
-    if(el) el.textContent = s.numChildren();
+    var e=document.getElementById('visitor-online');
+    if(e) e.textContent=s.numChildren();
   });
   _db.ref('totalVisit').on('value', function(s){
-    const el = document.getElementById('visitor-total');
-    if(el) el.textContent = (s.val()||0).toLocaleString('id-ID');
+    var e=document.getElementById('visitor-total');
+    if(e) e.textContent=(s.val()||0).toLocaleString('id-ID');
   });
 })();
 </script>
@@ -320,25 +214,17 @@ _db.ref('siteData').on('value', snap => { if(snap.exists()) applyData(snap.val()
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text);font-family:var(--font-b);font-size:15px;line-height:1.6;min-height:100vh;overflow-x:hidden}
 body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
-
-/* ── NAV ── */
 .nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:54px;background:rgba(13,15,20,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
 .nav-logo{font-family:var(--font-d);font-weight:800;font-size:17px;background:linear-gradient(135deg,var(--accent),#60aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;min-width:10px}
 .nav-tabs{display:flex;gap:2px}
-.nav-tab{padding:6px 16px;border-radius:8px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border:1px solid transparent;background:none;transition:all 0.15s;font-family:var(--font-b);letter-spacing:0.1px}
+.nav-tab{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;border:1px solid transparent;background:none;transition:all 0.15s;font-family:var(--font-b)}
 .nav-tab:hover{color:var(--text);background:rgba(255,255,255,0.04)}
 .nav-tab.active{background:rgba(59,141,241,0.1);color:#7bb8f8;border-color:rgba(59,141,241,0.2)}
 .nav-contact{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;background:rgba(59,141,241,0.1);border:1px solid rgba(59,141,241,0.22);color:#7bb8f8;text-decoration:none;font-size:12px;font-weight:600;transition:all 0.15s;white-space:nowrap}
 .nav-contact:hover{background:rgba(59,141,241,0.18)}
-
-/* ── PAGES ── */
 .page{display:none;max-width:900px;margin:0 auto;padding:20px 18px 40px;width:100%}
 .page.active{display:block}
-
-/* ── GLOW ── */
 .accent-glow{position:fixed;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(59,141,241,0.04) 0%,transparent 70%);top:-150px;right:-150px;pointer-events:none;z-index:0}
-
-/* ── HERO ── */
 .hero{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--border);margin-bottom:18px}
 #banner-bg{height:155px;background:linear-gradient(135deg,#0e1520 0%,#111827 50%,#0d1219 100%);position:relative}
 #banner-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,var(--card) 100%)}
@@ -346,7 +232,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .hero-body{background:var(--card);padding:0 22px 24px}
 .profile-row{display:flex;align-items:flex-end;gap:16px;margin-top:-42px;position:relative;z-index:2}
 .avatar-wrap{position:relative;flex-shrink:0}
-#profile-avatar{width:84px;height:84px;border-radius:50%;border:3px solid var(--card);object-fit:cover;display:block;background:linear-gradient(135deg,var(--accent),#60aaff)}
+#profile-avatar{width:84px;height:84px;border-radius:50%;border:3px solid var(--card);object-fit:cover;display:block;background:linear-gradient(135deg,var(--accent),#60aaff);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;pointer-events:none}
 .avatar-ring{position:absolute;inset:-4px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#60aaff);z-index:-1;opacity:0.5}
 .profile-meta{padding-bottom:4px;flex:1;min-width:0}
 .profile-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(59,141,241,0.12);border:1px solid rgba(59,141,241,0.25);color:#7bb8f8;margin-bottom:5px}
@@ -355,31 +241,23 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .profile-info-row{display:flex;gap:14px;margin-top:10px;flex-wrap:wrap}
 .profile-chip{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
 #profile-bio{margin-top:14px;font-size:13px;line-height:1.75;color:rgba(226,230,240,0.7);max-width:580px}
-
-/* ── SECTION LABEL ── */
 .sec-label{font-family:var(--font-d);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
-
-/* ── STATS ── */
 #stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
 .stat-card{background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:14px 10px;text-align:center;transition:all 0.18s;cursor:default}
 .stat-card:hover{border-color:rgba(59,141,241,0.3);transform:translateY(-2px);box-shadow:0 8px 24px rgba(59,141,241,0.08)}
 .stat-icon{font-size:18px;display:block;margin-bottom:5px}
 .stat-value{display:block;font-family:var(--font-d);font-size:18px;font-weight:800;background:linear-gradient(135deg,#fff,rgba(255,255,255,0.65));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .stat-label{font-size:10px;color:var(--muted);margin-top:1px;display:block}
-
-/* ── CARD ── */
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;position:relative;overflow:hidden;margin-bottom:14px}
 .card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(59,141,241,0.2),transparent)}
 .card-title{font-family:var(--font-d);font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:7px}
 .card-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent)}
-
-/* ── SOCIAL LINKS ── */
 #socials-grid{display:flex;flex-direction:column;gap:7px}
 .social-btn{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:11px;background:var(--card2);border:1px solid var(--border);color:var(--text);text-decoration:none;transition:all 0.18s;position:relative;overflow:hidden}
 .social-btn::before{content:'';position:absolute;inset:0;background:var(--lc,var(--accent));opacity:0;transition:opacity 0.18s}
 .social-btn:hover::before{opacity:0.06}
 .social-btn:hover{border-color:var(--lc,var(--accent));transform:translateX(3px)}
-.social-icon-wrap{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;position:relative}
+.social-icon-wrap{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
 .social-img{width:24px;height:24px;object-fit:contain;border-radius:4px}
 .social-emoji{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:18px}
 .social-info{flex:1;min-width:0}
@@ -387,8 +265,6 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .social-handle{display:block;font-size:11px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .social-arrow{width:13px;height:13px;opacity:0.3;flex-shrink:0;transition:all 0.18s}
 .social-btn:hover .social-arrow{opacity:1;transform:translate(2px,-2px)}
-
-/* ── WEBLINKS ── */
 #weblinks-grid{display:flex;flex-direction:column;gap:7px}
 .weblink-btn{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:11px;background:var(--card2);border:1px solid var(--border);color:var(--text);text-decoration:none;transition:all 0.18s;position:relative;overflow:hidden}
 .weblink-btn::before{content:'';position:absolute;inset:0;background:var(--lc,var(--accent));opacity:0;transition:opacity 0.18s}
@@ -398,16 +274,12 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .weblink-info{flex:1;min-width:0}
 .weblink-name{display:block;font-size:13px;font-weight:600;line-height:1.2}
 .weblink-desc{display:block;font-size:11px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-
-/* ── SERVICES ── */
 #services-grid{display:flex;flex-direction:column;gap:9px}
 .service-card{display:flex;align-items:center;gap:11px;padding:11px;border-radius:10px;background:var(--card2);border:1px solid var(--border);transition:all 0.18s}
 .service-card:hover{border-color:rgba(59,141,241,0.25)}
 .service-icon{width:38px;height:38px;border-radius:9px;background:rgba(59,141,241,0.08);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
 .service-title{font-size:12px;font-weight:600}
 .service-desc{font-size:11px;color:var(--muted);margin-top:1px}
-
-/* ── ANNOUNCEMENTS ── */
 #ann-list{display:flex;flex-direction:column;gap:12px}
 .ann-item{background:var(--card2);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color 0.18s}
 .ann-item:hover{border-color:rgba(59,141,241,0.25)}
@@ -416,24 +288,45 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .ann-tag{flex-shrink:0;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:700;letter-spacing:0.4px;border:1px solid}
 .ann-text{display:block;font-size:13px;color:rgba(226,230,240,0.82);line-height:1.6}
 .ann-time{font-size:10px;color:var(--muted);margin-left:auto}
-
-/* ── TENTANG & KEBIJAKAN ── */
+.ann-media-wrap{margin-top:10px;border-radius:10px;overflow:hidden;cursor:pointer;position:relative}
+.ann-media-protect{position:relative;user-select:none;-webkit-user-select:none}
+.ann-media-protect img,.ann-media-protect video{width:100%;max-height:280px;object-fit:cover;display:block;border-radius:10px;pointer-events:none}
+.ann-media-overlay{position:absolute;inset:0;background:rgba(0,0,0,0);transition:background 0.2s;display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px;border-radius:10px}
+.ann-media-overlay span{font-size:11px;color:rgba(255,255,255,0);background:rgba(0,0,0,0);padding:4px 10px;border-radius:20px;transition:all 0.2s}
+.ann-media-wrap:hover .ann-media-overlay{background:rgba(0,0,0,0.25)}
+.ann-media-wrap:hover .ann-media-overlay span{color:#fff;background:rgba(0,0,0,0.5)}
+#media-modal{display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.92);align-items:center;justify-content:center;padding:16px}
+#media-modal.open{display:flex}
+#media-modal-inner{position:relative;max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center}
+#media-modal img,#media-modal video{max-width:min(860px,calc(100vw - 32px));max-height:90vh;border-radius:12px;object-fit:contain;pointer-events:none;-webkit-user-select:none;user-select:none}
+#media-modal video{pointer-events:auto}
+#modal-close{position:fixed;top:16px;right:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);transition:background 0.15s;z-index:9001}
+#modal-close:hover{background:rgba(255,255,255,0.28)}
+.prose{font-size:13px;line-height:1.85;color:rgba(226,230,240,0.78)}
+.prose strong{color:var(--text);font-weight:700}
+.prose em{font-style:italic}
+.prose s{text-decoration:line-through;opacity:0.6}
+.prose p{margin-bottom:12px}
+.section-block{margin-bottom:18px}
+.visitor-bar{display:flex;gap:10px;margin-bottom:18px}
+.visitor-card{flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px}
+.visitor-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.visitor-dot.green{background:#22c55e;box-shadow:0 0 8px #22c55e;animation:vblink 2s infinite}
+.visitor-dot.blue{background:var(--accent);box-shadow:0 0 8px var(--accent)}
+@keyframes vblink{0%,100%{opacity:1}50%{opacity:0.4}}
+.visitor-info{flex:1}
+.visitor-num{font-family:var(--font-d);font-size:18px;font-weight:800;display:block;background:linear-gradient(135deg,#fff,rgba(255,255,255,0.65));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.visitor-label{font-size:10px;color:var(--muted);display:block;margin-top:1px}
 .page-section{margin-bottom:20px}
 .page-section-title{font-family:var(--font-d);font-size:20px;font-weight:800;margin-bottom:6px}
 .page-section-sub{font-size:12px;color:var(--muted);margin-bottom:18px}
-
-/* ── GMAIL CONTACT BUTTON ── */
 .gmail-btn{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;background:rgba(234,67,53,0.08);border:1px solid rgba(234,67,53,0.18);text-decoration:none;color:var(--text);transition:all 0.18s;margin-top:16px}
 .gmail-btn:hover{border-color:rgba(234,67,53,0.35);background:rgba(234,67,53,0.13);transform:translateY(-1px)}
 .gmail-icon{width:40px;height:40px;border-radius:10px;background:rgba(234,67,53,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .gmail-info .gl{font-size:12px;font-weight:600;margin-bottom:2px}
 .gmail-info .ge{font-size:13px;font-weight:700;color:#ea4335}
-
-/* ── FOOTER ── */
-footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;margin:0 auto;padding-left:18px;padding-right:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+footer{border-top:1px solid var(--border);padding:16px 18px 8px;max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
 #footer-copy,#footer-tagline{font-size:11px;color:var(--muted)}
-
-/* ── WHATSAPP SECTION ── */
 .wa-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .wa-logo{width:36px;height:36px;border-radius:10px;background:rgba(37,211,102,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .wa-title{font-family:var(--font-d);font-size:14px;font-weight:700}
@@ -449,48 +342,6 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
 .wa-item-name{display:block;font-size:13px;font-weight:600;line-height:1.2}
 .wa-item-desc{display:block;font-size:11px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wa-item-badge{flex-shrink:0;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:700;border:1px solid;letter-spacing:0.3px}
-
-/* ── ANNOUNCEMENTS MEDIA ── */
-.ann-media-wrap{margin-top:10px;border-radius:10px;overflow:hidden;cursor:pointer;position:relative}
-.ann-media-protect{position:relative;user-select:none;-webkit-user-select:none}
-.ann-media-protect img,.ann-media-protect video{width:100%;max-height:280px;object-fit:cover;display:block;border-radius:10px;pointer-events:none}
-.ann-media-overlay{position:absolute;inset:0;background:rgba(0,0,0,0);transition:background 0.2s;display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px;border-radius:10px}
-.ann-media-overlay span{font-size:11px;color:rgba(255,255,255,0);background:rgba(0,0,0,0);padding:4px 10px;border-radius:20px;transition:all 0.2s}
-.ann-media-wrap:hover .ann-media-overlay{background:rgba(0,0,0,0.25)}
-.ann-media-wrap:hover .ann-media-overlay span{color:#fff;background:rgba(0,0,0,0.5)}
-
-/* ── MEDIA MODAL ── */
-#media-modal{display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.92);align-items:center;justify-content:center;padding:16px}
-#media-modal.open{display:flex}
-#media-modal-inner{position:relative;max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center}
-#media-modal img,#media-modal video{max-width:min(860px,100vw - 32px);max-height:90vh;border-radius:12px;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-select:none;draggable:false}
-#media-modal video{pointer-events:auto}
-#modal-close{position:fixed;top:16px;right:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);transition:background 0.15s;z-index:9001}
-#modal-close:hover{background:rgba(255,255,255,0.28)}
-
-/* ── PROSE ── */
-.prose{font-size:13px;line-height:1.85;color:rgba(226,230,240,0.78)}
-.prose strong{color:var(--text);font-weight:700}
-.prose em{font-style:italic;color:rgba(226,230,240,0.85)}
-.prose s{text-decoration:line-through;opacity:0.6}
-.prose p{margin-bottom:12px}
-.prose br{display:block;margin-bottom:4px}
-
-/* ── SECTIONS SPACING ── */
-.section-block{margin-bottom:18px}
-
-/* ── VISITOR COUNTER ── */
-.visitor-bar{display:flex;gap:10px;margin-bottom:18px}
-.visitor-card{flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px}
-.visitor-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.visitor-dot.green{background:#22c55e;box-shadow:0 0 8px #22c55e;animation:vblink 2s infinite}
-.visitor-dot.blue{background:var(--accent);box-shadow:0 0 8px var(--accent)}
-@keyframes vblink{0%,100%{opacity:1}50%{opacity:0.4}}
-.visitor-info{flex:1}
-.visitor-num{font-family:var(--font-d);font-size:18px;font-weight:800;display:block;background:linear-gradient(135deg,#fff,rgba(255,255,255,0.65));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.visitor-label{font-size:10px;color:var(--muted);display:block;margin-top:1px}
-
-/* ── FAQ ── */
 .faq-search{width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:13px;outline:none;margin-bottom:16px;font-family:var(--font-b);transition:border-color 0.18s}
 .faq-search:focus{border-color:rgba(59,141,241,0.4)}
 .faq-search::placeholder{color:var(--muted)}
@@ -499,83 +350,36 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
 .faq-item.open{border-color:rgba(59,141,241,0.3)}
 .faq-q{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;gap:12px;user-select:none;-webkit-user-select:none}
 .faq-q-text{font-size:13px;font-weight:600;line-height:1.4;flex:1}
-.faq-icon{width:22px;height:22px;border-radius:50%;background:rgba(59,141,241,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.25s;font-size:12px;color:var(--accent)}
+.faq-icon{width:22px;height:22px;border-radius:50%;background:rgba(59,141,241,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform 0.25s;font-size:12px;color:var(--accent)}
 .faq-item.open .faq-icon{background:rgba(59,141,241,0.2);transform:rotate(180deg)}
-.faq-a{max-height:0;overflow:hidden;transition:max-height 0.3s ease,padding 0.3s ease}
+.faq-a{max-height:0;overflow:hidden;transition:max-height 0.3s ease}
 .faq-item.open .faq-a{max-height:600px}
-.faq-a-inner{padding:0 16px 16px;font-size:13px;color:rgba(226,230,240,0.78);line-height:1.75;border-top:1px solid var(--border);padding-top:12px;margin-top:0}
+.faq-a-inner{padding:12px 16px 16px;font-size:13px;color:rgba(226,230,240,0.78);line-height:1.75;border-top:1px solid var(--border)}
 .faq-cat{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;display:flex;align-items:center;gap:7px}
 .faq-cat::after{content:'';flex:1;height:1px;background:var(--border)}
-
-/* ── PROTEKSI AVATAR & BANNER ── */
-#profile-avatar, #banner-bg img {
-  -webkit-user-select:none;
-  user-select:none;
-  -webkit-touch-callout:none;
-  pointer-events:none;
-}
-
-/* ── RESPONSIVE ── */
+.share-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 7px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0}
+.share-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(59,141,241,0.08)}
+.share-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(21,24,32,0.96);color:var(--text);font-size:12px;padding:10px 20px;border-radius:20px;z-index:9999;opacity:0;transition:all 0.25s;pointer-events:none;white-space:nowrap;border:1px solid var(--border);backdrop-filter:blur(10px)}
+.share-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#profile-avatar,#banner-bg img{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 @media(min-width:900px){
-  .nav{height:62px;padding:0 40px}
-  .nav-logo{font-size:20px}
-  .nav-tab{padding:8px 20px;font-size:14px}
-  .nav-contact{padding:8px 18px;font-size:13px}
-  .page{padding:28px 0 60px}
-  main{padding-top:68px}
-  #banner-bg{height:200px}
-  #profile-avatar{width:100px;height:100px}
-  .profile-row{margin-top:-50px;gap:22px}
-  #profile-name{font-size:30px}
-  .hero-body{padding:0 32px 32px}
-  #profile-bio{font-size:14px}
-  #stats-grid{grid-template-columns:repeat(4,1fr);gap:12px}
-  .stat-card{padding:20px 14px}
-  .stat-value{font-size:22px}
-  .card{padding:24px}
-  .social-btn,.weblink-btn,.wa-item{padding:13px 16px}
-  .page-section-title{font-size:24px}
+  .nav{height:62px;padding:0 40px}.nav-logo{font-size:20px}.nav-tab{padding:8px 20px;font-size:14px}.nav-contact{padding:8px 18px;font-size:13px}
+  .page{padding:28px 0 60px}#banner-bg{height:200px}#profile-avatar{width:100px;height:100px}.profile-row{margin-top:-50px;gap:22px}#profile-name{font-size:30px}.hero-body{padding:0 32px 32px}
+  #stats-grid{grid-template-columns:repeat(4,1fr);gap:12px}.stat-card{padding:20px 14px}.stat-value{font-size:22px}.card{padding:24px}.page-section-title{font-size:24px}
 }
-
 @media(min-width:600px) and (max-width:899px){
-  .nav{height:58px;padding:0 24px}
-  .nav-tab{padding:7px 14px;font-size:13px}
-  #banner-bg{height:175px}
-  #profile-avatar{width:90px;height:90px}
-  .profile-row{margin-top:-45px}
-  #profile-name{font-size:26px}
-  .hero-body{padding:0 24px 26px}
-  #stats-grid{grid-template-columns:repeat(4,1fr);gap:10px}
+  .nav{height:58px;padding:0 24px}.nav-tab{padding:7px 14px;font-size:13px}#banner-bg{height:175px}#profile-avatar{width:90px;height:90px}.profile-row{margin-top:-45px}#profile-name{font-size:26px}.hero-body{padding:0 24px 26px}#stats-grid{grid-template-columns:repeat(4,1fr);gap:10px}
 }
-
 @media(max-width:599px){
-  .nav{height:50px;padding:0 12px;gap:4px}
-  .nav-logo{font-size:14px}
-  .nav-tab{padding:5px 9px;font-size:11px}
-  .nav-contact{padding:5px 9px;font-size:11px}
-  .page{padding:14px 14px 36px}
-  #banner-bg{height:135px}
-  #profile-avatar{width:74px;height:74px}
-  .profile-row{margin-top:-37px;gap:12px}
-  #profile-name{font-size:20px}
-  .hero-body{padding:0 15px 18px}
-  #stats-grid{grid-template-columns:repeat(2,1fr);gap:8px}
-  .stat-value{font-size:16px}
-  .card{padding:14px}
-  .social-btn,.weblink-btn,.wa-item{padding:9px 11px}
-  .social-icon-wrap,.weblink-icon,.wa-item-icon{width:34px;height:34px}
+  .nav{height:50px;padding:0 12px;gap:4px}.nav-logo{font-size:14px}.nav-tab{padding:5px 9px;font-size:11px}.nav-contact{padding:5px 9px;font-size:11px}
+  .page{padding:14px 14px 36px}#banner-bg{height:135px}#profile-avatar{width:74px;height:74px}.profile-row{margin-top:-37px;gap:12px}#profile-name{font-size:20px}.hero-body{padding:0 15px 18px}
+  #stats-grid{grid-template-columns:repeat(2,1fr);gap:8px}.stat-value{font-size:16px}.card{padding:14px}.social-btn,.weblink-btn,.wa-item{padding:9px 11px}.social-icon-wrap,.weblink-icon,.wa-item-icon{width:34px;height:34px}
 }
-
-@media(max-width:360px){
-  .nav-tab{padding:4px 7px;font-size:10px}
-  .nav-contact{display:none}
-  #profile-name{font-size:17px}
-}
+@media(max-width:360px){.nav-tab{padding:4px 7px;font-size:10px}.nav-contact{display:none}#profile-name{font-size:17px}}
 </style>
 </head>
 <body>
 <div class="accent-glow"></div>
-
 <nav class="nav">
   <div class="nav-logo" id="nav-logo"></div>
   <div class="nav-tabs">
@@ -588,15 +392,11 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
 </nav>
 
 <div class="page active" id="page-home">
-
   <div class="hero">
     <div id="banner-bg"></div>
     <div class="hero-body">
       <div class="profile-row">
-        <div class="avatar-wrap">
-          <div class="avatar-ring"></div>
-          <img id="profile-avatar" alt="Avatar">
-        </div>
+        <div class="avatar-wrap"><div class="avatar-ring"></div><img id="profile-avatar" alt="Avatar"></div>
         <div class="profile-meta">
           <div class="profile-badge" id="profile-badge" style="display:none"></div>
           <h1 id="profile-name" style="display:none"></h1>
@@ -629,128 +429,63 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
   </div>
 
   <div class="section-block" id="ann-section" style="display:none">
-    <div class="card">
-      <div class="card-title"><div class="card-dot"></div> Pengumuman Terbaru</div>
-      <div id="ann-list"></div>
-    </div>
+    <div class="card"><div class="card-title"><div class="card-dot"></div> Pengumuman Terbaru</div><div id="ann-list"></div></div>
   </div>
-
   <div class="section-block" id="stats-section" style="display:none">
-    <div class="sec-label">Overview</div>
-    <div id="stats-grid"></div>
+    <div class="sec-label">Overview</div><div id="stats-grid"></div>
   </div>
-
   <div class="section-block" id="socials-section" style="display:none">
-    <div class="card">
-      <div class="card-title"><div class="card-dot"></div> Sosial Media</div>
-      <div id="socials-grid"></div>
-    </div>
+    <div class="card"><div class="card-title"><div class="card-dot"></div> Sosial Media</div><div id="socials-grid"></div></div>
   </div>
-
   <div class="section-block" id="weblinks-section" style="display:none">
-    <div class="card">
-      <div class="card-title"><div class="card-dot"></div> Link Website & Aplikasi</div>
-      <div id="weblinks-grid"></div>
-    </div>
+    <div class="card"><div class="card-title"><div class="card-dot"></div> Link Website & Aplikasi</div><div id="weblinks-grid"></div></div>
   </div>
-
   <div class="section-block" id="wa-section" style="display:none">
     <div class="card">
       <div class="wa-header">
-        <div class="wa-logo">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.554 4.121 1.524 5.855L.058 23.75a.5.5 0 0 0 .61.638l6.09-1.596A11.947 11.947 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.9a9.87 9.87 0 0 1-5.031-1.378l-.36-.214-3.732.978.995-3.636-.235-.374A9.861 9.861 0 0 1 2.1 12C2.1 6.534 6.534 2.1 12 2.1c5.466 0 9.9 4.434 9.9 9.9 0 5.466-4.434 9.9-9.9 9.9z"/></svg>
-        </div>
-        <div>
-          <div class="wa-title">WhatsApp Community</div>
-          <div class="wa-subtitle">Grup, Komunitas & Saluran resmi kami</div>
-        </div>
+        <div class="wa-logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.554 4.121 1.524 5.855L.058 23.75a.5.5 0 0 0 .61.638l6.09-1.596A11.947 11.947 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.9a9.87 9.87 0 0 1-5.031-1.378l-.36-.214-3.732.978.995-3.636-.235-.374A9.861 9.861 0 0 1 2.1 12C2.1 6.534 6.534 2.1 12 2.1c5.466 0 9.9 4.434 9.9 9.9 0 5.466-4.434 9.9-9.9 9.9z"/></svg></div>
+        <div><div class="wa-title">WhatsApp Community</div><div class="wa-subtitle">Grup, Komunitas & Saluran resmi kami</div></div>
       </div>
-
-      <div id="wa-grup-wrap" style="display:none">
-        <div class="wa-group-label">💬 Grup WhatsApp</div>
-        <div id="wa-grup-list"></div>
-      </div>
-
-      <div id="wa-komunitas-wrap" style="display:none">
-        <div class="wa-group-label">🏘 Komunitas WhatsApp</div>
-        <div id="wa-komunitas-list"></div>
-      </div>
-
-      <div id="wa-saluran-wrap" style="display:none">
-        <div class="wa-group-label">📢 Saluran WhatsApp</div>
-        <div id="wa-saluran-list"></div>
-      </div>
+      <div id="wa-grup-wrap" style="display:none"><div class="wa-group-label">💬 Grup WhatsApp</div><div id="wa-grup-list"></div></div>
+      <div id="wa-komunitas-wrap" style="display:none"><div class="wa-group-label">🏘 Komunitas WhatsApp</div><div id="wa-komunitas-list"></div></div>
+      <div id="wa-saluran-wrap" style="display:none"><div class="wa-group-label">📢 Saluran WhatsApp</div><div id="wa-saluran-list"></div></div>
     </div>
   </div>
-
   <div class="section-block" id="services-section" style="display:none">
-    <div class="card">
-      <div class="card-title"><div class="card-dot"></div> Layanan</div>
-      <div id="services-grid"></div>
-    </div>
+    <div class="card"><div class="card-title"><div class="card-dot"></div> Layanan</div><div id="services-grid"></div></div>
   </div>
+</div>
 
-</div><div class="page" id="page-faq">
-  <div class="page-section">
-    <div class="page-section-title">FAQ</div>
-    <div class="page-section-sub">Pertanyaan yang sering ditanyakan</div>
-  </div>
-  <input class="faq-search" id="faq-search" placeholder="Cari pertanyaan..." oninput="renderFaq(window._faqData||[], this.value)">
-  <div id="faq-list">
-    <div class="faq-empty">Belum ada FAQ. Tambahkan melalui admin panel.</div>
-  </div>
-</div><div class="page" id="page-tentang">
-  <div class="page-section">
-    <div class="page-section-title">Tentang Kami</div>
-    <div class="page-section-sub">Kenali lebih jauh siapa kami dan apa yang kami lakukan</div>
-  </div>
+<div class="page" id="page-faq">
+  <div class="page-section"><div class="page-section-title">FAQ</div><div class="page-section-sub">Pertanyaan yang sering ditanyakan</div></div>
+  <input class="faq-search" id="faq-search" placeholder="Cari pertanyaan..." oninput="renderFaq(window._faqData||[],this.value)">
+  <div id="faq-list"><div class="faq-empty">Belum ada FAQ.</div></div>
+</div>
 
-  <div class="card" id="about-section" style="display:none">
-    <div class="card-title"><div class="card-dot"></div> Tentang</div>
-    <div class="prose" id="about-content"></div>
+<div class="page" id="page-tentang">
+  <div class="page-section"><div class="page-section-title">Tentang Kami</div><div class="page-section-sub">Kenali lebih jauh siapa kami</div></div>
+  <div class="card" id="about-section" style="display:none"><div class="card-title"><div class="card-dot"></div> Tentang</div><div class="prose" id="about-content"></div></div>
+  <div class="card"><div class="card-title"><div class="card-dot"></div> Hubungi Admin</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:4px">Untuk pertanyaan, laporan, atau kerjasama:</p>
+    <a href="mailto:xrezzkystore.idn@gmail.com" class="gmail-btn"><div class="gmail-icon"><svg width="22" height="22" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 24L4 10h40z"/><path fill="#FBBC04" d="M4 10v28l10-14z"/><path fill="#34A853" d="M44 10v28L34 24z"/><path fill="#4285F4" d="M4 38h40L24 24z"/><path fill="#C5221F" d="M4 10l20 14 20-14z" opacity=".3"/></svg></div><div class="gmail-info"><div class="gl">Gmail Admin</div><div class="ge">xrezzkystore.idn@gmail.com</div></div></a>
   </div>
+</div>
 
-  <div class="card">
-    <div class="card-title"><div class="card-dot"></div> Hubungi Admin</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:4px">Untuk pertanyaan, laporan, atau kerjasama — hubungi kami langsung melalui email:</p>
-    <a href="mailto:xrezzkystore.idn@gmail.com" class="gmail-btn">
-      <div class="gmail-icon">
-        <svg width="22" height="22" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 24L4 10h40z"/><path fill="#FBBC04" d="M4 10v28l10-14z"/><path fill="#34A853" d="M44 10v28L34 24z"/><path fill="#4285F4" d="M4 38h40L24 24z"/><path fill="#C5221F" d="M4 10l20 14 20-14z" opacity=".3"/></svg>
-      </div>
-      <div class="gmail-info">
-        <div class="gl">Gmail Admin</div>
-        <div class="ge">xrezzkystore.idn@gmail.com</div>
-      </div>
-    </a>
+<div class="page" id="page-kebijakan">
+  <div class="page-section"><div class="page-section-title">Kebijakan & Aturan</div><div class="page-section-sub">Harap baca dan pahami kebijakan kami</div></div>
+  <div class="card" id="policy-section" style="display:none"><div class="card-title"><div class="card-dot"></div> Kebijakan</div><div class="prose" id="policy-content"></div></div>
+  <div class="card"><div class="card-title"><div class="card-dot"></div> Pertanyaan Kebijakan</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:4px">Ada pertanyaan terkait kebijakan?</p>
+    <a href="mailto:xrezzkystore.idn@gmail.com" class="gmail-btn"><div class="gmail-icon"><svg width="22" height="22" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 24L4 10h40z"/><path fill="#FBBC04" d="M4 10v28l10-14z"/><path fill="#34A853" d="M44 10v28L34 24z"/><path fill="#4285F4" d="M4 38h40L24 24z"/><path fill="#C5221F" d="M4 10l20 14 20-14z" opacity=".3"/></svg></div><div class="gmail-info"><div class="gl">Gmail Admin</div><div class="ge">xrezzkystore.idn@gmail.com</div></div></a>
   </div>
-</div><div class="page" id="page-kebijakan">
-  <div class="page-section">
-    <div class="page-section-title">Kebijakan & Aturan</div>
-    <div class="page-section-sub">Harap baca dan pahami kebijakan penggunaan layanan kami</div>
-  </div>
+</div>
 
-  <div class="card" id="policy-section" style="display:none">
-    <div class="card-title"><div class="card-dot"></div> Kebijakan Penggunaan</div>
-    <div class="prose" id="policy-content"></div>
-  </div>
-
-  <div class="card">
-    <div class="card-title"><div class="card-dot"></div> Pertanyaan Seputar Kebijakan</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:4px">Ada pertanyaan terkait kebijakan? Hubungi kami:</p>
-    <a href="mailto:xrezzkystore.idn@gmail.com" class="gmail-btn">
-      <div class="gmail-icon">
-        <svg width="22" height="22" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 24L4 10h40z"/><path fill="#FBBC04" d="M4 10v28l10-14z"/><path fill="#34A853" d="M44 10v28L34 24z"/><path fill="#4285F4" d="M4 38h40L24 24z"/><path fill="#C5221F" d="M4 10l20 14 20-14z" opacity=".3"/></svg>
-      </div>
-      <div class="gmail-info">
-        <div class="gl">Gmail Admin</div>
-        <div class="ge">xrezzkystore.idn@gmail.com</div>
-      </div>
-    </a>
-  </div>
-</div><footer>
+<footer>
   <div id="footer-copy" style="display:none"></div>
   <div id="footer-tagline" style="display:none"></div>
 </footer>
+
+<div class="share-toast" id="share-toast"></div>
 
 <div id="media-modal" onclick="closeMediaModal()">
   <div id="media-modal-inner" onclick="event.stopPropagation()">
@@ -761,39 +496,36 @@ footer{border-top:1px solid var(--border);padding:16px 0 8px;max-width:900px;mar
 </div>
 
 <script>
-// ── PAGE NAVIGATION ──
+window._faqData=[];
 function goPage(name,btn){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
-  const targetPage = document.getElementById('page-'+name);
-  if(targetPage) targetPage.classList.add('active');
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.nav-tab').forEach(function(b){b.classList.remove('active');});
+  var pg=document.getElementById('page-'+name);
+  if(pg) pg.classList.add('active');
   if(btn) btn.classList.add('active');
   window.scrollTo({top:0,behavior:'smooth'});
-  if(name==='faq'){
-    const s=document.getElementById('faq-search');
-    if(s)s.value='';
-    renderFaq(window._faqData||[],'');
-  }
+  if(name==='faq'){var s=document.getElementById('faq-search');if(s)s.value='';renderFaq(window._faqData||[],'')}
 }
-
-// ── FAQ LOGIC ──
-window._faqData=[];
 function renderFaq(items,query){
-  const c=document.getElementById('faq-list'); if(!c)return;
-  const q=(query||'').toLowerCase().trim();
-  const f=(items||[]).filter(x=>!q||(x.question||'').toLowerCase().includes(q)||(x.answer||'').toLowerCase().includes(q));
+  var c=document.getElementById('faq-list');if(!c)return;
+  var q=(query||'').toLowerCase().trim();
+  var f=(items||[]).filter(function(x){return !q||(x.question||'').toLowerCase().includes(q)||(x.answer||'').toLowerCase().includes(q);});
   if(!f.length){c.innerHTML='<div class="faq-empty">'+(q?'Tidak ada hasil untuk "'+query+'"':'Belum ada FAQ.')+'</div>';return;}
-  const cats={};
-  f.forEach(x=>{const cat=x.category||'Umum';if(!cats[cat])cats[cat]=[];cats[cat].push(x);});
-  let html='';
-  Object.keys(cats).forEach(cat=>{
+  var cats={};
+  f.forEach(function(x){var cat=x.category||'Umum';if(!cats[cat])cats[cat]=[];cats[cat].push(x);});
+  var html='';
+  Object.keys(cats).forEach(function(cat){
     html+='<div class="faq-cat">'+cat+'</div>';
-    cats[cat].forEach((x,i)=>{
-      const id='faq_'+cat.replace(/[^a-z0-9]/gi,'_')+'_'+i;
+    cats[cat].forEach(function(x,i){
+      var id='faq_'+cat.replace(/[^a-z0-9]/gi,'_')+'_'+i;
+      var shareText=encodeURIComponent(x.question+'\n'+(x.answer||'').replace(/[*_~`]/g,''));
       html+='<div class="faq-item" id="'+id+'">'
         +'<div class="faq-q" onclick="toggleFaq(\''+id+'\')">'
           +'<span class="faq-q-text">'+x.question+'</span>'
-          +'<span class="faq-icon">&#9660;</span>'
+          +'<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'
+            +'<button class="share-btn" onclick="event.stopPropagation();shareContent(\''+shareText+'\',\'faq\')" title="Bagikan"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>'
+            +'<span class="faq-icon">&#9660;</span>'
+          +'</div>'
         +'</div>'
         +'<div class="faq-a"><div class="faq-a-inner">'+waFormat(x.answer||'')+'</div></div>'
         +'</div>';
@@ -801,56 +533,42 @@ function renderFaq(items,query){
   });
   c.innerHTML=html;
 }
-
 function toggleFaq(id){
-  const el=document.getElementById(id);if(!el)return;
-  const was=el.classList.contains('open');
-  document.querySelectorAll('.faq-item.open').forEach(e=>e.classList.remove('open'));
+  var el=document.getElementById(id);if(!el)return;
+  var was=el.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(function(e){e.classList.remove('open');});
   if(!was)el.classList.add('open');
 }
-
-// ── MEDIA MODAL ──
-function openMediaModal(url, type) {
-  const modal = document.getElementById('media-modal');
-  const img   = document.getElementById('modal-img');
-  const vid   = document.getElementById('modal-vid');
-  if(type === 'video') {
-    img.style.display = 'none';
-    vid.style.display = 'block';
-    vid.src = url;
-    vid.play().catch(()=>{});
+function shareContent(encodedText,type){
+  var text=decodeURIComponent(encodedText);
+  var url=window.location.href.split('?')[0];
+  if(navigator.share){
+    navigator.share({title:document.title,text:text,url:url}).catch(function(){});
   } else {
-    vid.style.display = 'none';
-    img.style.display = 'block';
-    img.src = url;
+    navigator.clipboard.writeText(text+'\n'+url).then(function(){showToast('✓ Disalin ke clipboard');}).catch(function(){showToast('Tidak bisa share di browser ini');});
   }
-  modal.classList.add('open');
-  document.body.style.overflow = 'hidden';
 }
-
-function closeMediaModal() {
-  const modal = document.getElementById('media-modal');
-  const vid   = document.getElementById('modal-vid');
-  if(modal) modal.classList.remove('open');
-  if(vid) {
-    vid.pause();
-    vid.src = '';
-  }
-  document.body.style.overflow = '';
+function showToast(msg){
+  var t=document.getElementById('share-toast');if(!t)return;
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},2500);
 }
-
-document.addEventListener('keydown', e => {
-  if(e.key === 'Escape') closeMediaModal();
-});
-
-// ── PROTEKSI AVATAR & BANNER ──
-document.addEventListener('contextmenu', e => {
-  const t = e.target;
-  if(t.id === 'profile-avatar' || t.closest('#banner-bg')) e.preventDefault();
-});
-document.addEventListener('dragstart', e => {
-  if(e.target.id === 'profile-avatar') e.preventDefault();
-});
+function openMediaModal(url,type){
+  var modal=document.getElementById('media-modal');
+  var img=document.getElementById('modal-img');
+  var vid=document.getElementById('modal-vid');
+  if(type==='video'){img.style.display='none';vid.style.display='block';vid.src=url;vid.play().catch(function(){});}
+  else{vid.style.display='none';img.style.display='block';img.src=url;}
+  modal.classList.add('open');document.body.style.overflow='hidden';
+}
+function closeMediaModal(){
+  var modal=document.getElementById('media-modal');var vid=document.getElementById('modal-vid');
+  if(modal)modal.classList.remove('open');if(vid){vid.pause();vid.src='';}
+  document.body.style.overflow='';
+}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeMediaModal();});
+document.addEventListener('contextmenu',function(e){var t=e.target;if(t.id==='profile-avatar'||t.closest&&t.closest('#banner-bg'))e.preventDefault();});
+document.addEventListener('dragstart',function(e){if(e.target.id==='profile-avatar')e.preventDefault();});
 </script>
 </body>
 </html>
