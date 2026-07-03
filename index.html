@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>XREZZKY — Official Profile</title>
 <meta name="description" content="XREZZKY — Digital Creator & Developer">
+<script>
+// Terapkan tema sebelum render — cegah flash warna salah
+(function(){
+  try{
+    var t = localStorage.getItem('_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+  }catch(e){}
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
 
@@ -120,7 +129,7 @@ _db.ref('siteData').on('value', function(snap){ if(snap.exists()) applyData(snap
 (function(){
   var QUOTA_KEY = '_xvq2';
   var DEVICE_KEY = '_xdid2';
-  var defaultQuota = 10;
+  var defaultQuota = 1;
   var quotaMax = defaultQuota;
 
   // Ambil quota dari DB (async, non-blocking)
@@ -210,9 +219,17 @@ _db.ref('siteData').on('value', function(snap){ if(snap.exists()) applyData(snap
   --card2:#1a1d26;--border:rgba(255,255,255,0.07);--text:#e2e6f0;
   --muted:#5e6478;--font-d:'Syne',sans-serif;--font-b:'DM Sans',sans-serif;--r:14px
 }
+html[data-theme="light"]{
+  --bg:#f5f7fa;--card:#ffffff;--card2:#f0f2f6;
+  --border:rgba(15,23,42,0.09);--text:#151820;--muted:#6b7280;
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);font-family:var(--font-b);font-size:15px;line-height:1.6;min-height:100vh;overflow-x:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--font-b);font-size:15px;line-height:1.6;min-height:100vh;overflow-x:hidden;transition:background 0.25s ease,color 0.25s ease}
+.card,.hero,.hero-body,.stat-card,.social-btn,.weblink-btn,.wa-item,.ann-item,.faq-item,.visitor-card,.gmail-btn,.nav,#media-modal img,#media-modal video{transition:background 0.25s ease,border-color 0.25s ease,color 0.25s ease}
+html[data-theme="light"] body::before{opacity:0.4}
+html[data-theme="light"] .stat-value{background:linear-gradient(135deg,#0f172a,rgba(15,23,42,0.65));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+html[data-theme="light"] .visitor-num{background:linear-gradient(135deg,#0f172a,rgba(15,23,42,0.65));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");pointer-events:none;z-index:0}
 .nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:54px;background:rgba(13,15,20,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
 .nav-logo{font-family:var(--font-d);font-weight:800;font-size:17px;background:linear-gradient(135deg,var(--accent),#60aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;min-width:10px}
@@ -222,6 +239,13 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .nav-tab.active{background:rgba(59,141,241,0.1);color:#7bb8f8;border-color:rgba(59,141,241,0.2)}
 .nav-contact{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;background:rgba(59,141,241,0.1);border:1px solid rgba(59,141,241,0.22);color:#7bb8f8;text-decoration:none;font-size:12px;font-weight:600;transition:all 0.15s;white-space:nowrap}
 .nav-contact:hover{background:rgba(59,141,241,0.18)}
+.theme-toggle{width:34px;height:34px;border-radius:9px;background:var(--card2);border:1px solid var(--border);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.18s}
+.theme-toggle:hover{border-color:rgba(59,141,241,0.35);color:var(--accent)}
+.theme-toggle svg{width:16px;height:16px}
+.theme-toggle .icon-sun{display:none}
+html[data-theme="light"] .theme-toggle .icon-moon{display:none}
+html[data-theme="light"] .theme-toggle .icon-sun{display:block}
+.nav-right{display:flex;align-items:center;gap:8px}
 .page{display:none;max-width:900px;margin:0 auto;padding:20px 18px 40px;width:100%}
 .page.active{display:block}
 .accent-glow{position:fixed;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(59,141,241,0.04) 0%,transparent 70%);top:-150px;right:-150px;pointer-events:none;z-index:0}
@@ -240,7 +264,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 #profile-tagline{font-size:13px;color:var(--muted);margin-top:2px}
 .profile-info-row{display:flex;gap:14px;margin-top:10px;flex-wrap:wrap}
 .profile-chip{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
-#profile-bio{margin-top:14px;font-size:13px;line-height:1.75;color:rgba(226,230,240,0.7);max-width:580px}
+#profile-bio{margin-top:14px;font-size:13px;line-height:1.75;color:var(--muted);max-width:580px}
 .sec-label{font-family:var(--font-d);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
 #stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
 .stat-card{background:var(--card2);border:1px solid var(--border);border-radius:var(--r);padding:14px 10px;text-align:center;transition:all 0.18s;cursor:default}
@@ -286,7 +310,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .ann-main{padding:12px 14px}
 .ann-header{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
 .ann-tag{flex-shrink:0;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:700;letter-spacing:0.4px;border:1px solid}
-.ann-text{display:block;font-size:13px;color:rgba(226,230,240,0.82);line-height:1.6}
+.ann-text{display:block;font-size:13px;color:var(--text);opacity:0.85;line-height:1.6}
 .ann-time{font-size:10px;color:var(--muted);margin-left:auto}
 .ann-media-wrap{margin-top:10px;border-radius:10px;overflow:hidden;cursor:pointer;position:relative}
 .ann-media-protect{position:relative;user-select:none;-webkit-user-select:none}
@@ -302,7 +326,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 #media-modal video{pointer-events:auto}
 #modal-close{position:fixed;top:16px;right:16px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);transition:background 0.15s;z-index:9001}
 #modal-close:hover{background:rgba(255,255,255,0.28)}
-.prose{font-size:13px;line-height:1.85;color:rgba(226,230,240,0.78)}
+.prose{font-size:13px;line-height:1.85;color:var(--text);opacity:0.85}
 .prose strong{color:var(--text);font-weight:700}
 .prose em{font-style:italic}
 .prose s{text-decoration:line-through;opacity:0.6}
@@ -354,7 +378,7 @@ footer{border-top:1px solid var(--border);padding:16px 18px 8px;max-width:900px;
 .faq-item.open .faq-icon{background:rgba(59,141,241,0.2);transform:rotate(180deg)}
 .faq-a{max-height:0;overflow:hidden;transition:max-height 0.3s ease}
 .faq-item.open .faq-a{max-height:600px}
-.faq-a-inner{padding:12px 16px 16px;font-size:13px;color:rgba(226,230,240,0.78);line-height:1.75;border-top:1px solid var(--border)}
+.faq-a-inner{padding:12px 16px 16px;font-size:13px;color:var(--text);opacity:0.85;line-height:1.75;border-top:1px solid var(--border)}
 .faq-cat{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;display:flex;align-items:center;gap:7px}
 .faq-cat::after{content:'';flex:1;height:1px;background:var(--border)}
 .share-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 7px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0}
@@ -375,7 +399,7 @@ footer{border-top:1px solid var(--border);padding:16px 18px 8px;max-width:900px;
   .page{padding:14px 14px 36px}#banner-bg{height:135px}#profile-avatar{width:74px;height:74px}.profile-row{margin-top:-37px;gap:12px}#profile-name{font-size:20px}.hero-body{padding:0 15px 18px}
   #stats-grid{grid-template-columns:repeat(2,1fr);gap:8px}.stat-value{font-size:16px}.card{padding:14px}.social-btn,.weblink-btn,.wa-item{padding:9px 11px}.social-icon-wrap,.weblink-icon,.wa-item-icon{width:34px;height:34px}
 }
-@media(max-width:360px){.nav-tab{padding:4px 7px;font-size:10px}.nav-contact{display:none}#profile-name{font-size:17px}}
+@media(max-width:360px){.nav-tab{padding:4px 7px;font-size:10px}.nav-contact{display:none}#profile-name{font-size:17px}.theme-toggle{width:30px;height:30px}}
 </style>
 </head>
 <body>
@@ -388,7 +412,13 @@ footer{border-top:1px solid var(--border);padding:16px 18px 8px;max-width:900px;
     <button class="nav-tab" onclick="goPage('tentang',this)">Tentang</button>
     <button class="nav-tab" onclick="goPage('kebijakan',this)">Kebijakan</button>
   </div>
-  <a href="mailto:xrezzkystore.idn@gmail.com" class="nav-contact">Kontak Admin</a>
+  <div class="nav-right">
+    <button class="theme-toggle" onclick="toggleTheme()" title="Ganti tema">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+    <a href="mailto:xrezzkystore.idn@gmail.com" class="nav-contact">Kontak Admin</a>
+  </div>
 </nav>
 
 <div class="page active" id="page-home">
@@ -404,8 +434,8 @@ footer{border-top:1px solid var(--border);padding:16px 18px 8px;max-width:900px;
         </div>
       </div>
       <div class="profile-info-row">
-        <div class="profile-chip" id="chip-location-wrap" style="display:none">📍 <span id="chip-location"></span></div>
-        <div class="profile-chip" id="chip-join-wrap" style="display:none">📅 <span id="chip-join"></span></div>
+        <div class="profile-chip" id="chip-location-wrap" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="display:inline;vertical-align:-1px;margin-right:3px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span id="chip-location"></span></div>
+        <div class="profile-chip" id="chip-join-wrap" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="display:inline;vertical-align:-1px;margin-right:3px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span id="chip-join"></span></div>
       </div>
       <p id="profile-bio" style="display:none"></p>
     </div>
@@ -446,9 +476,9 @@ footer{border-top:1px solid var(--border);padding:16px 18px 8px;max-width:900px;
         <div class="wa-logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.554 4.121 1.524 5.855L.058 23.75a.5.5 0 0 0 .61.638l6.09-1.596A11.947 11.947 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.9a9.87 9.87 0 0 1-5.031-1.378l-.36-.214-3.732.978.995-3.636-.235-.374A9.861 9.861 0 0 1 2.1 12C2.1 6.534 6.534 2.1 12 2.1c5.466 0 9.9 4.434 9.9 9.9 0 5.466-4.434 9.9-9.9 9.9z"/></svg></div>
         <div><div class="wa-title">WhatsApp Community</div><div class="wa-subtitle">Grup, Komunitas & Saluran resmi kami</div></div>
       </div>
-      <div id="wa-grup-wrap" style="display:none"><div class="wa-group-label">💬 Grup WhatsApp</div><div id="wa-grup-list"></div></div>
-      <div id="wa-komunitas-wrap" style="display:none"><div class="wa-group-label">🏘 Komunitas WhatsApp</div><div id="wa-komunitas-list"></div></div>
-      <div id="wa-saluran-wrap" style="display:none"><div class="wa-group-label">📢 Saluran WhatsApp</div><div id="wa-saluran-list"></div></div>
+      <div id="wa-grup-wrap" style="display:none"><div class="wa-group-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="display:inline;vertical-align:-1px;margin-right:4px"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>Grup WhatsApp</div><div id="wa-grup-list"></div></div>
+      <div id="wa-komunitas-wrap" style="display:none"><div class="wa-group-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="display:inline;vertical-align:-1px;margin-right:4px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Komunitas WhatsApp</div><div id="wa-komunitas-list"></div></div>
+      <div id="wa-saluran-wrap" style="display:none"><div class="wa-group-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="display:inline;vertical-align:-1px;margin-right:4px"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>Saluran WhatsApp</div><div id="wa-saluran-list"></div></div>
     </div>
   </div>
   <div class="section-block" id="services-section" style="display:none">
@@ -492,10 +522,18 @@ footer{border-top:1px solid var(--border);padding:16px 18px 8px;max-width:900px;
     <img id="modal-img" src="" alt="" draggable="false" style="display:none" oncontextmenu="return false">
     <video id="modal-vid" controls playsinline style="display:none"></video>
   </div>
-  <button id="modal-close" onclick="closeMediaModal()">✕</button>
+  <button id="modal-close" onclick="closeMediaModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
 </div>
 
 <script>
+// ── DARK / LIGHT MODE ──
+function toggleTheme(){
+  var cur = document.documentElement.getAttribute('data-theme') || 'dark';
+  var next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  try{ localStorage.setItem('_theme', next); }catch(e){}
+}
+
 window._faqData=[];
 function goPage(name,btn){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
